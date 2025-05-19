@@ -137,84 +137,55 @@ type TradingContextType = {
 // Default global settings
 const defaultGlobalSettings: GlobalSettings = {
   futureSymbol: "ES",
+  marginRequirement: 12000,
   expirationDate: new Date().toISOString().split("T")[0],
-  initialMargin: 12000,
-  maintenanceMargin: 10000,
-  contractSize: 50,
-  tickValue: 12.5,
-  tradingHoursStart: "09:30",
-  tradingHoursEnd: "16:00",
-  maxPositionSize: 5,
-  maxDailyLoss: 2000,
-  targetProfit: 4000
+  expirationTime: "16:00",
+  signalCalculationStartTime: "09:15",
+  tradingStartTime: "09:30",
+  globalEndTime: "16:00"
 };
 
 // Default daily parameters
 const defaultDailyParameters: DailyParameters = [
   {
     day: "Monday",
-    upperBandThreshold: 4.62,
-    lowerBandThreshold: 1.24,
-    maxTradeQuantity: 3,
-    premiumVolatilityFactor: 15,
-    tradingStrategy: "Mean Reversion",
-    timeAdjustments: {
-      marketOpen: 0.2,
-      midDay: -0.1,
-      marketClose: 0.3
-    }
+    premiumThresholdIn: 2.5,
+    premiumThresholdOut: 1.5,
+    avgLength: 20,
+    upperBandDeviation: 2.0,
+    lowerBandDeviation: 2.0
   },
   {
     day: "Tuesday",
-    upperBandThreshold: 4.62,
-    lowerBandThreshold: 1.24,
-    maxTradeQuantity: 3,
-    premiumVolatilityFactor: 15,
-    tradingStrategy: "Mean Reversion",
-    timeAdjustments: {
-      marketOpen: 0.2,
-      midDay: -0.1,
-      marketClose: 0.3
-    }
+    premiumThresholdIn: 2.5,
+    premiumThresholdOut: 1.5,
+    avgLength: 20,
+    upperBandDeviation: 2.0,
+    lowerBandDeviation: 2.0
   },
   {
     day: "Wednesday",
-    upperBandThreshold: 4.62,
-    lowerBandThreshold: 1.24,
-    maxTradeQuantity: 3,
-    premiumVolatilityFactor: 15,
-    tradingStrategy: "Mean Reversion",
-    timeAdjustments: {
-      marketOpen: 0.2,
-      midDay: -0.1,
-      marketClose: 0.3
-    }
+    premiumThresholdIn: 2.5,
+    premiumThresholdOut: 1.5,
+    avgLength: 20,
+    upperBandDeviation: 2.0,
+    lowerBandDeviation: 2.0
   },
   {
     day: "Thursday",
-    upperBandThreshold: 4.62,
-    lowerBandThreshold: 1.24,
-    maxTradeQuantity: 3,
-    premiumVolatilityFactor: 15,
-    tradingStrategy: "Mean Reversion",
-    timeAdjustments: {
-      marketOpen: 0.2,
-      midDay: -0.1,
-      marketClose: 0.3
-    }
+    premiumThresholdIn: 2.5,
+    premiumThresholdOut: 1.5,
+    avgLength: 20,
+    upperBandDeviation: 2.0,
+    lowerBandDeviation: 2.0
   },
   {
     day: "Friday",
-    upperBandThreshold: 4.62,
-    lowerBandThreshold: 1.24,
-    maxTradeQuantity: 3,
-    premiumVolatilityFactor: 15,
-    tradingStrategy: "Mean Reversion",
-    timeAdjustments: {
-      marketOpen: 0.2,
-      midDay: -0.1,
-      marketClose: 0.3
-    }
+    premiumThresholdIn: 2.5,
+    premiumThresholdOut: 1.5,
+    avgLength: 20,
+    upperBandDeviation: 2.0,
+    lowerBandDeviation: 2.0
   }
 ];
 

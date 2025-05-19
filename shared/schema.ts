@@ -176,29 +176,20 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 // Global Settings type definition
 export type GlobalSettings = {
   futureSymbol: string;
+  marginRequirement: number;
   expirationDate: string;
-  initialMargin: number;
-  maintenanceMargin: number;
-  contractSize: number;
-  tickValue: number;
-  tradingHoursStart: string;
-  tradingHoursEnd: string;
-  maxPositionSize: number;
-  maxDailyLoss: number;
-  targetProfit: number;
+  expirationTime: string;
+  signalCalculationStartTime: string;
+  tradingStartTime: string;
+  globalEndTime: string;
 };
 
 // Daily Parameters type definition
 export type DayParameters = {
   day: string;
-  upperBandThreshold: number;
-  lowerBandThreshold: number;
-  maxTradeQuantity: number;
-  premiumVolatilityFactor: number;
-  tradingStrategy: string;
-  timeAdjustments: {
-    marketOpen: number;
-    midDay: number;
-    marketClose: number;
-  };
+  premiumThresholdIn: number;
+  premiumThresholdOut: number;
+  avgLength: number;
+  upperBandDeviation: number;
+  lowerBandDeviation: number;
 };

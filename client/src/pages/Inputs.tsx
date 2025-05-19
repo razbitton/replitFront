@@ -152,6 +152,19 @@ const Inputs = () => {
                       value={settings?.futureSymbol}
                       onChange={(e) => handleGlobalSettingChange("futureSymbol", e.target.value)}
                       className="mt-1"
+                      placeholder="ES"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="marginRequirement">Margin Requirement ($)</Label>
+                    <Input
+                      id="marginRequirement"
+                      type="number"
+                      value={settings?.marginRequirement}
+                      onChange={(e) => handleGlobalSettingChange("marginRequirement", Number(e.target.value))}
+                      className="mt-1"
+                      placeholder="12000"
                     />
                   </div>
                   
@@ -167,108 +180,47 @@ const Inputs = () => {
                   </div>
                   
                   <div>
-                    <Label htmlFor="initialMargin">Initial Margin Requirement ($)</Label>
+                    <Label htmlFor="expirationTime">Expiration Time</Label>
                     <Input
-                      id="initialMargin"
-                      type="number"
-                      value={settings?.initialMargin}
-                      onChange={(e) => handleGlobalSettingChange("initialMargin", Number(e.target.value))}
-                      className="mt-1"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="maintenanceMargin">Maintenance Margin ($)</Label>
-                    <Input
-                      id="maintenanceMargin"
-                      type="number"
-                      value={settings?.maintenanceMargin}
-                      onChange={(e) => handleGlobalSettingChange("maintenanceMargin", Number(e.target.value))}
-                      className="mt-1"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="contractSize">Contract Size</Label>
-                    <Input
-                      id="contractSize"
-                      type="number"
-                      value={settings?.contractSize}
-                      onChange={(e) => handleGlobalSettingChange("contractSize", Number(e.target.value))}
-                      className="mt-1"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="tickValue">Tick Value ($)</Label>
-                    <Input
-                      id="tickValue"
-                      type="number"
-                      step="0.01"
-                      value={settings?.tickValue}
-                      onChange={(e) => handleGlobalSettingChange("tickValue", Number(e.target.value))}
-                      className="mt-1"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="tradingHoursStart">Trading Hours Start</Label>
-                    <Input
-                      id="tradingHoursStart"
+                      id="expirationTime"
                       type="time"
-                      value={settings?.tradingHoursStart}
-                      onChange={(e) => handleGlobalSettingChange("tradingHoursStart", e.target.value)}
+                      value={settings?.expirationTime}
+                      onChange={(e) => handleGlobalSettingChange("expirationTime", e.target.value)}
                       className="mt-1"
                     />
                   </div>
                   
                   <div>
-                    <Label htmlFor="tradingHoursEnd">Trading Hours End</Label>
+                    <Label htmlFor="signalCalculationStartTime">Signal Calculation Start Time</Label>
                     <Input
-                      id="tradingHoursEnd"
+                      id="signalCalculationStartTime"
                       type="time"
-                      value={settings?.tradingHoursEnd}
-                      onChange={(e) => handleGlobalSettingChange("tradingHoursEnd", e.target.value)}
+                      value={settings?.signalCalculationStartTime}
+                      onChange={(e) => handleGlobalSettingChange("signalCalculationStartTime", e.target.value)}
                       className="mt-1"
                     />
                   </div>
-                </div>
-                
-                <div className="mt-6">
-                  <h3 className="text-lg font-medium mb-3">Risk Parameters</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                      <Label htmlFor="maxPositionSize">Max Position Size</Label>
-                      <Input
-                        id="maxPositionSize"
-                        type="number"
-                        value={settings?.maxPositionSize}
-                        onChange={(e) => handleGlobalSettingChange("maxPositionSize", Number(e.target.value))}
-                        className="mt-1"
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="maxDailyLoss">Max Daily Loss ($)</Label>
-                      <Input
-                        id="maxDailyLoss"
-                        type="number"
-                        value={settings?.maxDailyLoss}
-                        onChange={(e) => handleGlobalSettingChange("maxDailyLoss", Number(e.target.value))}
-                        className="mt-1"
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="targetProfit">Target Profit ($)</Label>
-                      <Input
-                        id="targetProfit"
-                        type="number"
-                        value={settings?.targetProfit}
-                        onChange={(e) => handleGlobalSettingChange("targetProfit", Number(e.target.value))}
-                        className="mt-1"
-                      />
-                    </div>
+                  
+                  <div>
+                    <Label htmlFor="tradingStartTime">Trading Start Time</Label>
+                    <Input
+                      id="tradingStartTime"
+                      type="time"
+                      value={settings?.tradingStartTime}
+                      onChange={(e) => handleGlobalSettingChange("tradingStartTime", e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="globalEndTime">Global End Time</Label>
+                    <Input
+                      id="globalEndTime"
+                      type="time"
+                      value={settings?.globalEndTime}
+                      onChange={(e) => handleGlobalSettingChange("globalEndTime", e.target.value)}
+                      className="mt-1"
+                    />
                   </div>
                 </div>
                 
