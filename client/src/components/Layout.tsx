@@ -40,7 +40,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     switch (location) {
       case "/":
         return "Dashboard";
-      case "/detailed":
+      case "/detailed-metrics":
         return "Detailed Metrics";
       case "/inputs":
         return "Input Configuration";

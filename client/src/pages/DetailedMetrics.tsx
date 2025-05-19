@@ -12,6 +12,7 @@ import {
 import {
   preparePremiumChartData,
   prepareAssetChartData,
+  prepareBollingerBandsData,
   preparePremiumDistributionData,
   commonChartOptions
 } from "@/lib/chartUtils";
@@ -106,36 +107,7 @@ const DetailedMetrics = () => {
         
         const ctx = bollingerChartRef.current.getContext("2d");
         if (ctx) {
-          const data = prepareAssetChartData(quoteHistory);
-          
-          // Add Bollinger Bands to the asset chart data
-          const upperBand = [];
-          const lowerBand = [];
-          
-          for (let i = 0; i < quoteHistory.length; i++) {
-            const price = quoteHistory[i].price;
-            const stdDev = 25; // Simplified standard deviation value
-            upperBand.push(price + 2 * stdDev);
-            lowerBand.push(price - 2 * stdDev);
-          }
-          
-          data.datasets.push({
-            label: 'Upper Band',
-            data: upperBand,
-            borderColor: 'rgba(255, 99, 132, 0.7)',
-            backgroundColor: 'rgba(255, 99, 132, 0)',
-            tension: 0.4,
-            fill: false
-          });
-          
-          data.datasets.push({
-            label: 'Lower Band',
-            data: lowerBand,
-            borderColor: 'rgba(255, 99, 132, 0.7)',
-            backgroundColor: 'rgba(255, 99, 132, 0)',
-            tension: 0.4,
-            fill: false
-          });
+          const data = prepareBollingerBandsData(quoteHistory);
           
           bollingerChartInstance.current = new Chart(ctx, {
             type: "line",

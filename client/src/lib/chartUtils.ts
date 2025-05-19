@@ -161,6 +161,83 @@ export const prepareAssetChartData = (quoteHistory: QuoteData[]) => {
   };
 };
 
+// Prepare data for bollinger bands chart
+export const prepareBollingerBandsData = (quoteHistory: QuoteData[]) => {
+  if (!quoteHistory || quoteHistory.length === 0) {
+    return {
+      labels: generateTimeLabels(14),
+      datasets: [
+        {
+          label: 'Asset Price',
+          data: Array(14).fill(null),
+          borderColor: 'rgba(16, 185, 129, 1)',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          tension: 0.4,
+          fill: false,
+        },
+        {
+          label: 'Upper Band',
+          data: Array(14).fill(null),
+          borderColor: 'rgba(239, 68, 68, 0.7)',
+          borderDash: [5, 5],
+          tension: 0.4,
+          fill: false,
+        },
+        {
+          label: 'Lower Band',
+          data: Array(14).fill(null),
+          borderColor: 'rgba(59, 130, 246, 0.7)',
+          borderDash: [5, 5],
+          tension: 0.4,
+          fill: false,
+        },
+      ],
+    };
+  }
+  
+  // Use actual data
+  const labels = quoteHistory.map(data => formatTimestamp(data.timestamp));
+  const priceData = quoteHistory.map(data => data.price);
+  
+  // Calculate simple bollinger bands
+  const period = 20; // Standard bollinger period
+  const stdDevMultiplier = 2; // Standard deviation multiplier
+  const stdDev = 25; // Simplified fixed standard deviation for demonstration
+  
+  const upperBand = priceData.map(price => price + stdDevMultiplier * stdDev);
+  const lowerBand = priceData.map(price => price - stdDevMultiplier * stdDev);
+  
+  return {
+    labels,
+    datasets: [
+      {
+        label: 'Asset Price',
+        data: priceData,
+        borderColor: 'rgba(16, 185, 129, 1)',
+        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        tension: 0.4,
+        fill: false,
+      },
+      {
+        label: 'Upper Band',
+        data: upperBand,
+        borderColor: 'rgba(239, 68, 68, 0.7)',
+        borderDash: [5, 5],
+        tension: 0.4,
+        fill: false,
+      },
+      {
+        label: 'Lower Band',
+        data: lowerBand,
+        borderColor: 'rgba(59, 130, 246, 0.7)',
+        borderDash: [5, 5],
+        tension: 0.4,
+        fill: false,
+      },
+    ],
+  };
+};
+
 // Prepare data for premium distribution chart
 export const preparePremiumDistributionData = (bandDataHistory: BandData[]) => {
   // Default empty data
