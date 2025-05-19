@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTradingContext } from "@/contexts/TradingContext";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,7 +15,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog";
+import { Plus } from "lucide-react";
 
 // New account form type
 type NewAccount = Omit<Account, "id">;
@@ -39,7 +41,8 @@ const Accounts = () => {
     active: true,
   });
 
-  // Edit account dialog state
+  // Dialog states
+  const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
 
@@ -65,6 +68,7 @@ const Accounts = () => {
         accountNumber: "",
         active: true,
       });
+      setShowAddDialog(false);
     } catch (error) {
       console.error("Failed to create account:", error);
     }
@@ -99,168 +103,155 @@ const Accounts = () => {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Skeleton className="h-[500px] rounded-lg" />
-        <Skeleton className="h-[500px] rounded-lg" />
-        <Skeleton className="h-[300px] rounded-lg lg:col-span-2" />
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-8 w-52" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <Skeleton className="h-[400px] rounded-lg w-full" />
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Add Account Form */}
-        <Card>
-          <CardHeader className="px-6 py-4 border-b">
-            <CardTitle className="text-lg font-medium">Add New Account</CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <form onSubmit={handleCreateAccount}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <Label htmlFor="accountName">Account Name</Label>
-                  <Input
-                    id="accountName"
-                    value={accountForm.name}
-                    onChange={(e) => handleFormChange("name", e.target.value)}
-                    className="mt-1"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="broker">Broker</Label>
-                  <Select
-                    value={accountForm.broker}
-                    onValueChange={(value) => handleFormChange("broker", value)}
-                  >
-                    <SelectTrigger id="broker" className="mt-1">
-                      <SelectValue placeholder="Select broker" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Interactive Brokers">Interactive Brokers</SelectItem>
-                      <SelectItem value="TD Ameritrade">TD Ameritrade</SelectItem>
-                      <SelectItem value="E*Trade">E*Trade</SelectItem>
-                      <SelectItem value="Schwab">Schwab</SelectItem>
-                      <SelectItem value="Tastytrade">Tastytrade</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
+    <div className="space-y-6">
+      {/* Header with Add Button */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-semibold">Trading Accounts</h1>
+        <Button 
+          className="bg-blue-600 hover:bg-blue-700"
+          onClick={() => setShowAddDialog(true)}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add New Account
+        </Button>
+      </div>
+      
+      {/* Accounts Table Card */}
+      <Card>
+        <CardContent className="p-0">
+          <AccountsTable 
+            accounts={accounts}
+            onEdit={handleEditAccount}
+            onDelete={handleDeleteAccount}
+          />
+        </CardContent>
+      </Card>
+      
+      {/* Add Account Dialog */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Add New Account</DialogTitle>
+          </DialogHeader>
+          
+          <form onSubmit={handleCreateAccount}>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="accountName">Account Name</Label>
+                <Input
+                  id="accountName"
+                  value={accountForm.name}
+                  onChange={(e) => handleFormChange("name", e.target.value)}
+                  placeholder="Enter account name"
+                  required
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <Label htmlFor="apiKey">API Key</Label>
                   <Input
                     id="apiKey"
                     type="password"
                     value={accountForm.apiKey}
                     onChange={(e) => handleFormChange("apiKey", e.target.value)}
-                    className="mt-1"
+                    placeholder="Enter API key"
                     required
                   />
                 </div>
                 
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="apiSecret">API Secret</Label>
                   <Input
                     id="apiSecret"
                     type="password"
                     value={accountForm.apiSecret}
                     onChange={(e) => handleFormChange("apiSecret", e.target.value)}
-                    className="mt-1"
+                    placeholder="Enter API secret"
                     required
                   />
                 </div>
-                
-                <div className="md:col-span-2">
-                  <Label htmlFor="accountNumber">Account Number (Optional)</Label>
-                  <Input
-                    id="accountNumber"
-                    value={accountForm.accountNumber}
-                    onChange={(e) => handleFormChange("accountNumber", e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-                
-                <div className="md:col-span-2 flex items-center space-x-2 mt-2">
-                  <Checkbox
-                    id="account-active"
-                    checked={accountForm.active}
-                    onCheckedChange={(checked) => 
-                      handleFormChange("active", checked === true)
-                    }
-                  />
-                  <Label
-                    htmlFor="account-active"
-                    className="text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Account Active
-                  </Label>
-                </div>
               </div>
               
-              <div className="flex justify-end">
-                <Button type="submit">Add Account</Button>
+              <div className="space-y-2">
+                <Label htmlFor="broker">Broker</Label>
+                <Select
+                  value={accountForm.broker}
+                  onValueChange={(value) => handleFormChange("broker", value)}
+                >
+                  <SelectTrigger id="broker">
+                    <SelectValue placeholder="Select broker" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Interactive Brokers">Interactive Brokers</SelectItem>
+                    <SelectItem value="TD Ameritrade">TD Ameritrade</SelectItem>
+                    <SelectItem value="E*Trade">E*Trade</SelectItem>
+                    <SelectItem value="Schwab">Schwab</SelectItem>
+                    <SelectItem value="Tastytrade">Tastytrade</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </form>
-          </CardContent>
-        </Card>
-        
-        {/* API Connections Info */}
-        <Card>
-          <CardHeader className="px-6 py-4 border-b">
-            <CardTitle className="text-lg font-medium">API Connection Guidelines</CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="prose dark:prose-invert prose-sm max-w-none">
-              <p>To connect your brokerage account, you'll need to generate API credentials from your broker's developer portal.</p>
               
-              <h4>Interactive Brokers</h4>
-              <ul>
-                <li>Log in to your IBKR account</li>
-                <li>Navigate to User Settings &gt; API &gt; Settings</li>
-                <li>Enable "Read-Only API access" and "Trading API access"</li>
-                <li>Generate a new API key with appropriate permissions</li>
-              </ul>
+              <div className="space-y-2">
+                <Label htmlFor="accountType">Account Type</Label>
+                <Select
+                  onValueChange={(value) => {}}
+                  defaultValue="live"
+                >
+                  <SelectTrigger id="accountType">
+                    <SelectValue placeholder="Select account type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="live">Live Trading</SelectItem>
+                    <SelectItem value="paper">Paper Trading</SelectItem>
+                    <SelectItem value="demo">Demo Account</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               
-              <h4>TD Ameritrade</h4>
-              <ul>
-                <li>Visit the TD Ameritrade Developer Portal</li>
-                <li>Register a new application</li>
-                <li>Use OAuth for authentication and request appropriate scopes</li>
-                <li>Add the redirect URI: http://localhost:5001/callback</li>
-              </ul>
-              
-              <p className="text-yellow-600 dark:text-yellow-400"><strong>Important:</strong> Never share your API credentials. The system will securely encrypt and store your API keys.</p>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="accountEnabled" className="cursor-pointer">Enabled</Label>
+                <Switch
+                  id="accountEnabled"
+                  checked={accountForm.active}
+                  onCheckedChange={(checked) => 
+                    handleFormChange("active", checked)
+                  }
+                />
+              </div>
             </div>
-          </CardContent>
-        </Card>
-        
-        {/* Accounts Table */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="px-6 py-4 border-b">
-            <CardTitle className="text-lg font-medium">Registered Accounts</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <AccountsTable 
-              accounts={accounts}
-              onEdit={handleEditAccount}
-              onDelete={handleDeleteAccount}
-            />
-          </CardContent>
-        </Card>
-      </div>
+            
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="outline">Cancel</Button>
+              </DialogClose>
+              <Button type="submit">Save Account</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
       
       {/* Edit Account Dialog */}
       {editingAccount && (
         <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-          <DialogContent>
+          <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle>Edit Account</DialogTitle>
             </DialogHeader>
             
-            <div className="grid grid-cols-2 gap-4 mt-4">
-              <div className="col-span-2">
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
                 <Label htmlFor="edit-name">Account Name</Label>
                 <Input
                   id="edit-name"
@@ -270,10 +261,43 @@ const Accounts = () => {
                       prev ? { ...prev, name: e.target.value } : null
                     )
                   }
+                  placeholder="Enter account name"
                 />
               </div>
               
-              <div className="col-span-2">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-apiKey">API Key</Label>
+                  <Input
+                    id="edit-apiKey"
+                    type="password"
+                    value={editingAccount.apiKey}
+                    onChange={(e) => 
+                      setEditingAccount((prev) => 
+                        prev ? { ...prev, apiKey: e.target.value } : null
+                      )
+                    }
+                    placeholder="Enter API key"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="edit-apiSecret">API Secret</Label>
+                  <Input
+                    id="edit-apiSecret"
+                    type="password"
+                    value={editingAccount.apiSecret}
+                    onChange={(e) => 
+                      setEditingAccount((prev) => 
+                        prev ? { ...prev, apiSecret: e.target.value } : null
+                      )
+                    }
+                    placeholder="Enter API secret"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
                 <Label htmlFor="edit-broker">Broker</Label>
                 <Select
                   value={editingAccount.broker}
@@ -296,56 +320,21 @@ const Accounts = () => {
                 </Select>
               </div>
               
-              <div>
-                <Label htmlFor="edit-apiKey">API Key</Label>
-                <Input
-                  id="edit-apiKey"
-                  type="password"
-                  value={editingAccount.apiKey}
-                  onChange={(e) => 
-                    setEditingAccount((prev) => 
-                      prev ? { ...prev, apiKey: e.target.value } : null
-                    )
-                  }
-                  placeholder="********"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="edit-apiSecret">API Secret</Label>
-                <Input
-                  id="edit-apiSecret"
-                  type="password"
-                  value={editingAccount.apiSecret}
-                  onChange={(e) => 
-                    setEditingAccount((prev) => 
-                      prev ? { ...prev, apiSecret: e.target.value } : null
-                    )
-                  }
-                  placeholder="********"
-                />
-              </div>
-              
-              <div className="col-span-2 flex items-center space-x-2 mt-2">
-                <Checkbox
+              <div className="flex items-center justify-between">
+                <Label htmlFor="edit-account-active" className="cursor-pointer">Enabled</Label>
+                <Switch
                   id="edit-account-active"
                   checked={editingAccount.active}
                   onCheckedChange={(checked) => 
                     setEditingAccount((prev) => 
-                      prev ? { ...prev, active: checked === true } : null
+                      prev ? { ...prev, active: checked } : null
                     )
                   }
                 />
-                <Label
-                  htmlFor="edit-account-active"
-                  className="text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Account Active
-                </Label>
               </div>
             </div>
             
-            <DialogFooter className="mt-6">
+            <DialogFooter>
               <Button variant="outline" onClick={() => setShowEditDialog(false)}>
                 Cancel
               </Button>
