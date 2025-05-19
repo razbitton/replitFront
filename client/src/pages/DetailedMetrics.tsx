@@ -13,7 +13,6 @@ import {
   preparePremiumChartData,
   prepareAssetChartData,
   preparePremiumDistributionData,
-  preparePriceActivityHeatmap,
   commonChartOptions
 } from "@/lib/chartUtils";
 
@@ -22,24 +21,34 @@ Chart.register(...registerables);
 
 const DetailedMetrics = () => {
   const { bandData, quoteData, isLoading } = useTradingContext();
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState("premiumMetrics");
   const [bandDataHistory, setBandDataHistory] = useState<any[]>([]);
   const [quoteHistory, setQuoteHistory] = useState<any[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
+  const [inTradingWindow, setInTradingWindow] = useState(true); // In or Out of trading window
+  const [vixPrice, setVixPrice] = useState(18.75); // Mock VIX price
+  
+  // Trading conditions for the blocks section
+  const [tradingConditions, setTradingConditions] = useState([
+    { title: "Threshold Condition", value: Math.random() > 0.5 },
+    { title: "Premium Volatility", value: Math.random() > 0.5 },
+    { title: "Band Cross Signal", value: Math.random() > 0.5 },
+    { title: "Market Hours", value: Math.random() > 0.5 },
+    { title: "Risk Limit", value: Math.random() > 0.5 },
+    { title: "Momentum Indicator", value: Math.random() > 0.5 },
+    { title: "Liquidity Condition", value: Math.random() > 0.5 },
+    { title: "Position Capacity", value: Math.random() > 0.5 },
+  ]);
 
   // Chart refs
-  const overviewChartRef = useRef<HTMLCanvasElement>(null);
   const premiumChartRef = useRef<HTMLCanvasElement>(null);
-  const assetChartRef = useRef<HTMLCanvasElement>(null);
+  const bollingerChartRef = useRef<HTMLCanvasElement>(null);
   const premiumDistChartRef = useRef<HTMLCanvasElement>(null);
-  const heatmapChartRef = useRef<HTMLCanvasElement>(null);
 
   // Chart instances
-  const overviewChartInstance = useRef<Chart | null>(null);
   const premiumChartInstance = useRef<Chart | null>(null);
-  const assetChartInstance = useRef<Chart | null>(null);
+  const bollingerChartInstance = useRef<Chart | null>(null);
   const premiumDistChartInstance = useRef<Chart | null>(null);
-  const heatmapChartInstance = useRef<Chart | null>(null);
 
   // Fetch historical data
   useEffect(() => {
@@ -72,25 +81,8 @@ const DetailedMetrics = () => {
     if (historyLoading || !bandDataHistory.length || !quoteHistory.length) return;
 
     const initializeCharts = () => {
-      // Overview Chart (Premium with bands)
-      if (activeTab === "overview" && overviewChartRef.current) {
-        if (overviewChartInstance.current) {
-          overviewChartInstance.current.destroy();
-        }
-        
-        const ctx = overviewChartRef.current.getContext("2d");
-        if (ctx) {
-          const data = preparePremiumChartData(bandDataHistory);
-          overviewChartInstance.current = new Chart(ctx, {
-            type: "line",
-            data,
-            options: commonChartOptions
-          });
-        }
-      }
-      
-      // Premium Chart
-      if (activeTab === "premium" && premiumChartRef.current) {
+      // Premium Metrics Chart
+      if (activeTab === "premiumMetrics" && premiumChartRef.current) {
         if (premiumChartInstance.current) {
           premiumChartInstance.current.destroy();
         }
@@ -106,16 +98,46 @@ const DetailedMetrics = () => {
         }
       }
       
-      // Asset Chart
-      if (activeTab === "asset" && assetChartRef.current) {
-        if (assetChartInstance.current) {
-          assetChartInstance.current.destroy();
+      // Bollinger Bands Chart
+      if (activeTab === "bollingerMetrics" && bollingerChartRef.current) {
+        if (bollingerChartInstance.current) {
+          bollingerChartInstance.current.destroy();
         }
         
-        const ctx = assetChartRef.current.getContext("2d");
+        const ctx = bollingerChartRef.current.getContext("2d");
         if (ctx) {
           const data = prepareAssetChartData(quoteHistory);
-          assetChartInstance.current = new Chart(ctx, {
+          
+          // Add Bollinger Bands to the asset chart data
+          const upperBand = [];
+          const lowerBand = [];
+          
+          for (let i = 0; i < quoteHistory.length; i++) {
+            const price = quoteHistory[i].price;
+            const stdDev = 25; // Simplified standard deviation value
+            upperBand.push(price + 2 * stdDev);
+            lowerBand.push(price - 2 * stdDev);
+          }
+          
+          data.datasets.push({
+            label: 'Upper Band',
+            data: upperBand,
+            borderColor: 'rgba(255, 99, 132, 0.7)',
+            backgroundColor: 'rgba(255, 99, 132, 0)',
+            tension: 0.4,
+            fill: false
+          });
+          
+          data.datasets.push({
+            label: 'Lower Band',
+            data: lowerBand,
+            borderColor: 'rgba(255, 99, 132, 0.7)',
+            backgroundColor: 'rgba(255, 99, 132, 0)',
+            tension: 0.4,
+            fill: false
+          });
+          
+          bollingerChartInstance.current = new Chart(ctx, {
             type: "line",
             data,
             options: commonChartOptions
@@ -124,7 +146,7 @@ const DetailedMetrics = () => {
       }
       
       // Premium Distribution Chart
-      if (activeTab === "premium" && premiumDistChartRef.current) {
+      if (activeTab === "premiumMetrics" && premiumDistChartRef.current) {
         if (premiumDistChartInstance.current) {
           premiumDistChartInstance.current.destroy();
         }
@@ -147,59 +169,40 @@ const DetailedMetrics = () => {
           });
         }
       }
-      
-      // Price Activity Heatmap Chart
-      if (activeTab === "asset" && heatmapChartRef.current) {
-        if (heatmapChartInstance.current) {
-          heatmapChartInstance.current.destroy();
-        }
-        
-        const ctx = heatmapChartRef.current.getContext("2d");
-        if (ctx) {
-          const data = preparePriceActivityHeatmap(quoteHistory);
-          heatmapChartInstance.current = new Chart(ctx, {
-            type: "bar",
-            data,
-            options: {
-              ...commonChartOptions,
-              plugins: {
-                ...commonChartOptions.plugins,
-                legend: {
-                  display: false
-                }
-              }
-            }
-          });
-        }
-      }
     };
 
     initializeCharts();
     
     // Cleanup chart instances on unmount
     return () => {
-      if (overviewChartInstance.current) {
-        overviewChartInstance.current.destroy();
-        overviewChartInstance.current = null;
-      }
       if (premiumChartInstance.current) {
         premiumChartInstance.current.destroy();
         premiumChartInstance.current = null;
       }
-      if (assetChartInstance.current) {
-        assetChartInstance.current.destroy();
-        assetChartInstance.current = null;
+      if (bollingerChartInstance.current) {
+        bollingerChartInstance.current.destroy();
+        bollingerChartInstance.current = null;
       }
       if (premiumDistChartInstance.current) {
         premiumDistChartInstance.current.destroy();
         premiumDistChartInstance.current = null;
       }
-      if (heatmapChartInstance.current) {
-        heatmapChartInstance.current.destroy();
-        heatmapChartInstance.current = null;
-      }
     };
   }, [activeTab, historyLoading, bandDataHistory, quoteHistory]);
+  
+  // Update trading conditions randomly every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTradingConditions(prev => 
+        prev.map(condition => ({
+          ...condition,
+          value: Math.random() > 0.5
+        }))
+      );
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   // Format price with commas
   const formatPrice = (price: number) => {
@@ -258,38 +261,44 @@ const DetailedMetrics = () => {
           </CardContent>
         </Card>
         
-        {/* Premium Card */}
+        {/* VIX Price Card */}
         <Card>
           <CardContent className="p-6">
-            <h3 className="text-sm text-gray-500 dark:text-gray-400">Premium</h3>
+            <h3 className="text-sm text-gray-500 dark:text-gray-400">VIX Price</h3>
             <div className="flex items-center mt-1">
               <div className="text-2xl font-semibold font-mono">
                 {isLoading ? (
                   <Skeleton className="h-8 w-20" />
                 ) : (
-                  `$${bandData?.premium.toFixed(2) || "0.00"}`
+                  vixPrice.toFixed(2)
                 )}
               </div>
-              <span className="flex items-center text-green-500 ml-2 text-sm">
-                <ArrowUpIcon className="w-4 h-4 mr-1" />
-                0.82%
+              <span className="flex items-center text-red-500 ml-2 text-sm">
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7-7-7"></path>
+                </svg>
+                0.35%
               </span>
             </div>
             <div className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-              Current premium value
+              CBOE Volatility Index
             </div>
           </CardContent>
         </Card>
         
-        {/* Position Card */}
+        {/* Trading Window Card */}
         <Card>
           <CardContent className="p-6">
-            <h3 className="text-sm text-gray-500 dark:text-gray-400">Net Position</h3>
-            <div className="text-2xl font-semibold font-mono mt-1">
-              {isLoading ? <Skeleton className="h-8 w-10" /> : "+1"}
+            <h3 className="text-sm text-gray-500 dark:text-gray-400">Trading Window</h3>
+            <div className="text-2xl font-semibold mt-1">
+              {isLoading ? <Skeleton className="h-8 w-24" /> : inTradingWindow ? (
+                <span className="text-green-500">In Window</span>
+              ) : (
+                <span className="text-red-500">Out of Window</span>
+              )}
             </div>
-            <div className="text-green-500 dark:text-green-400 text-sm mt-1">
-              {isLoading ? <Skeleton className="h-4 w-32" /> : "P/L: +$900.00 (0.21%)"}
+            <div className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+              {isLoading ? <Skeleton className="h-4 w-32" /> : "Next window: 09:30 ET"}
             </div>
           </CardContent>
         </Card>
@@ -297,80 +306,18 @@ const DetailedMetrics = () => {
       
       {/* Tab Navigation */}
       <Card>
-        <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab}>
+        <Tabs defaultValue="premiumMetrics" value={activeTab} onValueChange={setActiveTab}>
           <CardHeader className="border-b px-6 py-0">
             <TabsList className="justify-start w-full border-b-0">
-              <TabsTrigger className="data-[state=active]:border-primary-500 py-4 px-6" value="overview">Overview</TabsTrigger>
-              <TabsTrigger className="data-[state=active]:border-primary-500 py-4 px-6" value="premium">Premium Metrics</TabsTrigger>
-              <TabsTrigger className="data-[state=active]:border-primary-500 py-4 px-6" value="asset">Asset Metrics</TabsTrigger>
+              <TabsTrigger className="data-[state=active]:border-primary-500 py-4 px-6" value="premiumMetrics">Premium Metrics</TabsTrigger>
+              <TabsTrigger className="data-[state=active]:border-primary-500 py-4 px-6" value="bollingerMetrics">Bollinger Metrics</TabsTrigger>
             </TabsList>
           </CardHeader>
           
           {/* Tab Contents */}
           <CardContent className="p-6">
-            {/* Overview Tab */}
-            <TabsContent value="overview">
-              <div className="mb-6">
-                <h3 className="text-lg font-medium mb-4">Performance Summary</h3>
-                <div className={`bg-gray-50 dark:bg-gray-700 p-6 rounded-lg ${historyLoading ? 'h-[300px] flex items-center justify-center' : ''}`}>
-                  {historyLoading ? (
-                    <Skeleton className="h-[260px] w-full" />
-                  ) : (
-                    <canvas id="overviewChart" height="300" ref={overviewChartRef}></canvas>
-                  )}
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                  <h4 className="text-sm font-medium mb-2">Premium Condition</h4>
-                  <div className="flex items-center">
-                    <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
-                      <svg className="h-6 w-6 text-green-600 dark:text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                      </svg>
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-lg font-semibold">Normal</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Within expected range</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                  <h4 className="text-sm font-medium mb-2">Volatility</h4>
-                  <div className="flex items-center">
-                    <div className="h-12 w-12 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center">
-                      <svg className="h-6 w-6 text-yellow-600 dark:text-yellow-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-                      </svg>
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-lg font-semibold">Elevated</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Higher than 30-day avg</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                  <h4 className="text-sm font-medium mb-2">Band Proximity</h4>
-                  <div className="flex items-center">
-                    <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
-                      <svg className="h-6 w-6 text-blue-600 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                      </svg>
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-lg font-semibold">48%</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">From upper band</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-            
             {/* Premium Metrics Tab */}
-            <TabsContent value="premium">
+            <TabsContent value="premiumMetrics">
               <div className="mb-6">
                 <h3 className="text-lg font-medium mb-4">Premium Analysis</h3>
                 <div className={`bg-gray-50 dark:bg-gray-700 p-6 rounded-lg ${historyLoading ? 'h-[300px] flex items-center justify-center' : ''}`}>
@@ -387,88 +334,71 @@ const DetailedMetrics = () => {
                   <h4 className="text-sm font-medium mb-2">Premium Statistics</h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Daily High</p>
-                      <p className="text-lg font-mono font-semibold">$3.12</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Current</p>
+                      <p className="text-lg font-semibold">${bandData?.premium.toFixed(2) || "0.00"}</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Daily Low</p>
-                      <p className="text-lg font-mono font-semibold">$1.98</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">24h High</p>
+                      <p className="text-lg font-semibold">$3.42</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">30-Day Avg</p>
-                      <p className="text-lg font-mono font-semibold">$2.54</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">24h Low</p>
+                      <p className="text-lg font-semibold">$1.85</p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Std Deviation</p>
-                      <p className="text-lg font-mono font-semibold">$0.42</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">7d Avg</p>
+                      <p className="text-lg font-semibold">$2.67</p>
                     </div>
                   </div>
                 </div>
                 
                 <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                   <h4 className="text-sm font-medium mb-2">Premium Distribution</h4>
-                  <div className="h-40">
+                  <div className={`${historyLoading ? 'h-40 flex items-center justify-center' : ''}`}>
                     {historyLoading ? (
-                      <Skeleton className="h-full w-full" />
+                      <Skeleton className="h-36 w-full" />
                     ) : (
-                      <canvas id="premiumDistChart" ref={premiumDistChartRef}></canvas>
+                      <canvas id="premiumDistChart" height="150" ref={premiumDistChartRef}></canvas>
                     )}
                   </div>
                 </div>
               </div>
             </TabsContent>
             
-            {/* Asset Metrics Tab */}
-            <TabsContent value="asset">
+            {/* Bollinger Metrics Tab */}
+            <TabsContent value="bollingerMetrics">
               <div className="mb-6">
-                <h3 className="text-lg font-medium mb-4">Asset Price History</h3>
+                <h3 className="text-lg font-medium mb-4">Asset Price with Bollinger Bands</h3>
                 <div className={`bg-gray-50 dark:bg-gray-700 p-6 rounded-lg ${historyLoading ? 'h-[300px] flex items-center justify-center' : ''}`}>
                   {historyLoading ? (
                     <Skeleton className="h-[260px] w-full" />
                   ) : (
-                    <canvas id="assetChart" height="300" ref={assetChartRef}></canvas>
+                    <canvas id="bollingerChart" height="300" ref={bollingerChartRef}></canvas>
                   )}
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                  <h4 className="text-sm font-medium mb-2">Market Statistics</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Day Range</p>
-                      <p className="text-lg font-mono font-semibold">4,275 - 4,298</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Volume</p>
-                      <p className="text-lg font-mono font-semibold">1.45M</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Open Interest</p>
-                      <p className="text-lg font-mono font-semibold">2.87M</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Implied Vol</p>
-                      <p className="text-lg font-mono font-semibold">15.4%</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                  <h4 className="text-sm font-medium mb-2">Price Action Heatmap</h4>
-                  <div className="h-40">
-                    {historyLoading ? (
-                      <Skeleton className="h-full w-full" />
-                    ) : (
-                      <canvas id="heatmapChart" ref={heatmapChartRef}></canvas>
-                    )}
-                  </div>
                 </div>
               </div>
             </TabsContent>
           </CardContent>
         </Tabs>
       </Card>
+      
+      {/* Trading Condition Blocks */}
+      <div className="mt-6">
+        <h3 className="text-lg font-medium mb-4">Trading Conditions</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {tradingConditions.map((condition, index) => (
+            <div 
+              key={index} 
+              className={`p-4 rounded-lg ${condition.value ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900'}`}
+            >
+              <h4 className="text-sm font-medium mb-1">{condition.title}</h4>
+              <p className={`text-lg font-semibold ${condition.value ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
+                {condition.value ? 'TRUE' : 'FALSE'}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };
