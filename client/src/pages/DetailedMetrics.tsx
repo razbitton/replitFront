@@ -79,7 +79,26 @@ const DetailedMetrics = () => {
 
   // Initialize and update charts when data or active tab changes
   useEffect(() => {
-    if (historyLoading || !bandDataHistory.length || !quoteHistory.length) return;
+    // Cleanup function to destroy existing chart instances
+    const cleanup = () => {
+      if (premiumChartInstance.current) {
+        premiumChartInstance.current.destroy();
+        premiumChartInstance.current = null;
+      }
+      if (bollingerChartInstance.current) {
+        bollingerChartInstance.current.destroy();
+        bollingerChartInstance.current = null;
+      }
+      if (premiumDistChartInstance.current) {
+        premiumDistChartInstance.current.destroy();
+        premiumDistChartInstance.current = null;
+      }
+    };
+
+    if (historyLoading || !bandDataHistory.length || !quoteHistory.length) {
+      cleanup();
+      return;
+    }
 
     const initializeCharts = () => {
       // Premium Metrics Chart
@@ -298,41 +317,6 @@ const DetailedMetrics = () => {
                   ) : (
                     <canvas id="premiumChart" height="300" ref={premiumChartRef}></canvas>
                   )}
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                  <h4 className="text-sm font-medium mb-2">Premium Statistics</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Current</p>
-                      <p className="text-lg font-semibold">${bandData?.premium.toFixed(2) || "0.00"}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">24h High</p>
-                      <p className="text-lg font-semibold">$3.42</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">24h Low</p>
-                      <p className="text-lg font-semibold">$1.85</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">7d Avg</p>
-                      <p className="text-lg font-semibold">$2.67</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                  <h4 className="text-sm font-medium mb-2">Premium Distribution</h4>
-                  <div className={`${historyLoading ? 'h-40 flex items-center justify-center' : ''}`}>
-                    {historyLoading ? (
-                      <Skeleton className="h-36 w-full" />
-                    ) : (
-                      <canvas id="premiumDistChart" height="150" ref={premiumDistChartRef}></canvas>
-                    )}
-                  </div>
                 </div>
               </div>
             </TabsContent>
