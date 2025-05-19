@@ -1,0 +1,100 @@
+Product Requirements Document (PRD)
+1. Overview
+The project is a Blazor Server application built on .NET 8.0, targeting “Frontend Production 1.0.” It contains Razor components for UI pages (Pages/), services handling backend interaction (Services/), shared components (Shared/), and static assets (wwwroot/). The app communicates with a backend (expected at http://localhost:5001) through both HTTP API calls and SignalR for real-time updates. It also persists configuration data locally on disk.
+
+2. UI Structure
+2.1 Shared Layout
+Main Layout: Minimal layout rendering page body (Shared/MainLayout.razor).
+
+Dark Mode Toggle: JavaScript-driven button toggles a CSS class and persists the choice in localStorage (Shared/DarkModeToggle.razor, wwwroot/js/darkmode.js, CSS rules around line 60 in wwwroot/css/site.css).
+
+Navigation Sidebar: Repeated in each page with links to Home (dashboard), Inputs, Manual, and Accounts pages.
+
+2.2 Pages
+Index (Dashboard) (Pages/Index.razor)
+
+Displays current band data (Premium, UpperBand, LowerBand).
+
+Tables for Positions, Orders, Service Status, and Logs.
+
+Dropdowns allow filtering by account or log level.
+
+Program state toggle button.
+
+Listens to backend events to refresh data.
+
+Dashboard (Detailed Metrics) (Pages/Dashboard.razor)
+
+Top info cards show symbol, asset price, premium, and position.
+
+Tabs provide Overview, Premium Metrics, and Asset Metrics sections with chart placeholders and condition indicators.
+
+Uses event handlers for premium/quote/band updates.
+
+Inputs (Pages/Inputs.razor)
+
+Two-tab form for Global Settings and Daily Parameters.
+
+Global settings collect fields like future symbol, margin requirement, expiration date/time, etc.
+
+Daily parameters use an accordion per day to configure thresholds and bands.
+
+Saves data to backend integration service on submit.
+
+Manual (Pages/Manual.razor)
+
+Manual order placement: choose account(s), symbol, quantity, price, and place buy/sell orders.
+
+Displays existing orders and positions in tables with edit/cancel buttons.
+
+Modal dialog for editing an order.
+
+Accounts (Pages/Accounts.razor)
+
+Form to add new trading accounts with fields (name, API key/secret, broker, etc.).
+
+Table lists existing accounts with edit/delete buttons.
+
+Edit modal allows updating account details.
+
+Error and Host Pages (Pages/Error.cshtml, _Host.cshtml)
+
+_Host.cshtml sets up the root markup, references blazor.server.js, Chart.js, and js/darkmode.js.
+
+3. Styling & Assets
+Stylesheets: wwwroot/css/site.css (bootstrap + dark mode styles) and wwwroot/css/styles.css (baseline CSS).
+
+Dark Mode: CSS variables change root palette when body has dark-mode class.
+
+Scripts: wwwroot/js/darkmode.js manages theme selection.
+
+Bootstrap and Open Iconic assets are included.
+
+4. Backend Integration
+4.1 Service (BackendIntegration)
+Central service for API calls and SignalR events.
+
+Stores lists of Orders, Positions, Logs, ServiceStatus, and quote/band data.
+
+Connects to http://localhost:5001 (BackendIntegration.cs line 19) and registers SignalR event handlers.
+
+Saves and loads configuration data from disk (accounts, settings, program state) using hard‑coded Windows paths (BackendIntegration.cs lines 83–85).
+
+Exposes events such as OrdersUpdated, PositionUpdated, BandDataUpdated, etc., which Razor components subscribe to for UI updates.
+
+Provides methods to place/cancel/update orders, toggle program state, and reconnect to SignalR.
+
+4.2 Interface
+IBackendIntegration defines the service contract (orders, positions, logs, etc.) for dependency injection.
+
+5. Data Persistence
+Local JSON files store accounts (accounts.json), settings (inputs.json), and program state (programState.json).
+
+Paths default to C:\Users\hp\OneDrive\Documents\AlfaIntegrationFolder as referenced in README and BackendIntegration (README.md lines 21–25, BackendIntegration.cs lines 83–85).
+
+6. Key Behaviors
+Pages rely heavily on event-based updates from the backend service.
+
+Dark mode state is stored in localStorage via JS.
+
+Chart data is currently dummy data generated in InitializeDummyChartData() (BackendIntegration).
