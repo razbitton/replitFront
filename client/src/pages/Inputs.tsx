@@ -248,130 +248,77 @@ const Inputs = () => {
                           <AccordionContent className="p-4 border-t">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                               <div>
-                                <Label htmlFor={`upperBand-${index}`}>Upper Band Threshold</Label>
+                                <Label htmlFor={`premiumThresholdIn-${index}`}>Premium Threshold In</Label>
                                 <Input
-                                  id={`upperBand-${index}`}
+                                  id={`premiumThresholdIn-${index}`}
                                   type="number"
                                   step="0.01"
-                                  value={day.upperBandThreshold}
+                                  value={day.premiumThresholdIn}
                                   onChange={(e) => 
-                                    handleDailyParameterChange(index, "upperBandThreshold", Number(e.target.value))
+                                    handleDailyParameterChange(index, "premiumThresholdIn", Number(e.target.value))
                                   }
                                   className="mt-1"
+                                  placeholder="2.5"
                                 />
                               </div>
                               
                               <div>
-                                <Label htmlFor={`lowerBand-${index}`}>Lower Band Threshold</Label>
+                                <Label htmlFor={`premiumThresholdOut-${index}`}>Premium Threshold Out</Label>
                                 <Input
-                                  id={`lowerBand-${index}`}
+                                  id={`premiumThresholdOut-${index}`}
                                   type="number"
                                   step="0.01"
-                                  value={day.lowerBandThreshold}
+                                  value={day.premiumThresholdOut}
                                   onChange={(e) => 
-                                    handleDailyParameterChange(index, "lowerBandThreshold", Number(e.target.value))
+                                    handleDailyParameterChange(index, "premiumThresholdOut", Number(e.target.value))
                                   }
                                   className="mt-1"
+                                  placeholder="1.5"
                                 />
                               </div>
                               
                               <div>
-                                <Label htmlFor={`maxTradeQty-${index}`}>Max Trade Quantity</Label>
+                                <Label htmlFor={`avgLength-${index}`}>AVG Length</Label>
                                 <Input
-                                  id={`maxTradeQty-${index}`}
+                                  id={`avgLength-${index}`}
                                   type="number"
-                                  value={day.maxTradeQuantity}
+                                  value={day.avgLength}
                                   onChange={(e) => 
-                                    handleDailyParameterChange(index, "maxTradeQuantity", Number(e.target.value))
+                                    handleDailyParameterChange(index, "avgLength", Number(e.target.value))
                                   }
                                   className="mt-1"
+                                  placeholder="20"
                                 />
                               </div>
                               
                               <div>
-                                <Label htmlFor={`volatilityFactor-${index}`}>Premium Volatility Factor (%)</Label>
+                                <Label htmlFor={`upperBandDeviation-${index}`}>Upper Band Deviation</Label>
                                 <Input
-                                  id={`volatilityFactor-${index}`}
+                                  id={`upperBandDeviation-${index}`}
                                   type="number"
-                                  value={day.premiumVolatilityFactor}
+                                  step="0.1"
+                                  value={day.upperBandDeviation}
                                   onChange={(e) => 
-                                    handleDailyParameterChange(index, "premiumVolatilityFactor", Number(e.target.value))
+                                    handleDailyParameterChange(index, "upperBandDeviation", Number(e.target.value))
                                   }
                                   className="mt-1"
+                                  placeholder="2.0"
                                 />
                               </div>
                               
-                              <div className="md:col-span-2">
-                                <Label htmlFor={`strategy-${index}`}>Trading Strategy</Label>
-                                <Select
-                                  value={day.tradingStrategy}
-                                  onValueChange={(value) => 
-                                    handleDailyParameterChange(index, "tradingStrategy", value)
+                              <div>
+                                <Label htmlFor={`lowerBandDeviation-${index}`}>Lower Band Deviation</Label>
+                                <Input
+                                  id={`lowerBandDeviation-${index}`}
+                                  type="number"
+                                  step="0.1"
+                                  value={day.lowerBandDeviation}
+                                  onChange={(e) => 
+                                    handleDailyParameterChange(index, "lowerBandDeviation", Number(e.target.value))
                                   }
-                                >
-                                  <SelectTrigger id={`strategy-${index}`} className="mt-1">
-                                    <SelectValue placeholder="Select a strategy" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="Mean Reversion">Mean Reversion</SelectItem>
-                                    <SelectItem value="Trend Following">Trend Following</SelectItem>
-                                    <SelectItem value="Volatility Breakout">Volatility Breakout</SelectItem>
-                                    <SelectItem value="Pair Hedging">Pair Hedging</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </div>
-                            
-                            <div className="mt-4">
-                              <h4 className="text-sm font-medium mb-2">Time-Specific Adjustments</h4>
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                  <Label htmlFor={`marketOpen-${index}`} className="text-xs text-gray-500">
-                                    Market Open (9:30-10:00)
-                                  </Label>
-                                  <Input
-                                    id={`marketOpen-${index}`}
-                                    type="number"
-                                    step="0.1"
-                                    value={day.timeAdjustments.marketOpen}
-                                    onChange={(e) => 
-                                      handleTimeAdjustmentChange(index, "marketOpen", Number(e.target.value))
-                                    }
-                                    className="mt-1"
-                                  />
-                                </div>
-                                
-                                <div>
-                                  <Label htmlFor={`midDay-${index}`} className="text-xs text-gray-500">
-                                    Mid-Day (12:00-13:30)
-                                  </Label>
-                                  <Input
-                                    id={`midDay-${index}`}
-                                    type="number"
-                                    step="0.1"
-                                    value={day.timeAdjustments.midDay}
-                                    onChange={(e) => 
-                                      handleTimeAdjustmentChange(index, "midDay", Number(e.target.value))
-                                    }
-                                    className="mt-1"
-                                  />
-                                </div>
-                                
-                                <div>
-                                  <Label htmlFor={`marketClose-${index}`} className="text-xs text-gray-500">
-                                    Market Close (15:30-16:00)
-                                  </Label>
-                                  <Input
-                                    id={`marketClose-${index}`}
-                                    type="number"
-                                    step="0.1"
-                                    value={day.timeAdjustments.marketClose}
-                                    onChange={(e) => 
-                                      handleTimeAdjustmentChange(index, "marketClose", Number(e.target.value))
-                                    }
-                                    className="mt-1"
-                                  />
-                                </div>
+                                  className="mt-1"
+                                  placeholder="2.0"
+                                />
                               </div>
                             </div>
                           </AccordionContent>
