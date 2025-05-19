@@ -84,78 +84,68 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <nav className="flex-1 overflow-y-auto py-4 px-2">
             <ul className="space-y-1">
               <li>
-                <Link href="/">
-                  <a
-                    className={`flex items-center px-4 py-3 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 
-                      ${
-                        location === "/"
-                          ? "bg-primary-50 text-primary-600 dark:bg-gray-700"
-                          : ""
-                      }`}
-                  >
-                    <LayoutDashboard className="w-5 h-5 mr-3" />
-                    Dashboard
-                  </a>
+                <Link href="/"
+                  className={`flex items-center px-4 py-3 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 
+                    ${
+                      location === "/"
+                        ? "bg-primary-50 text-primary-600 dark:bg-gray-700"
+                        : ""
+                    }`}
+                >
+                  <LayoutDashboard className="w-5 h-5 mr-3" />
+                  Dashboard
                 </Link>
               </li>
               <li>
-                <Link href="/detailed">
-                  <a
-                    className={`flex items-center px-4 py-3 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 
-                      ${
-                        location === "/detailed"
-                          ? "bg-primary-50 text-primary-600 dark:bg-gray-700"
-                          : ""
-                      }`}
-                  >
-                    <BarChart3 className="w-5 h-5 mr-3" />
-                    Detailed Metrics
-                  </a>
+                <Link href="/detailed"
+                  className={`flex items-center px-4 py-3 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 
+                    ${
+                      location === "/detailed"
+                        ? "bg-primary-50 text-primary-600 dark:bg-gray-700"
+                        : ""
+                    }`}
+                >
+                  <BarChart3 className="w-5 h-5 mr-3" />
+                  Detailed Metrics
                 </Link>
               </li>
               <li>
-                <Link href="/inputs">
-                  <a
-                    className={`flex items-center px-4 py-3 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 
-                      ${
-                        location === "/inputs"
-                          ? "bg-primary-50 text-primary-600 dark:bg-gray-700"
-                          : ""
-                      }`}
-                  >
-                    <FileInput className="w-5 h-5 mr-3" />
-                    Inputs
-                  </a>
+                <Link href="/inputs"
+                  className={`flex items-center px-4 py-3 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 
+                    ${
+                      location === "/inputs"
+                        ? "bg-primary-50 text-primary-600 dark:bg-gray-700"
+                        : ""
+                    }`}
+                >
+                  <FileInput className="w-5 h-5 mr-3" />
+                  Inputs
                 </Link>
               </li>
               <li>
-                <Link href="/manual">
-                  <a
-                    className={`flex items-center px-4 py-3 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 
-                      ${
-                        location === "/manual"
-                          ? "bg-primary-50 text-primary-600 dark:bg-gray-700"
-                          : ""
-                      }`}
-                  >
-                    <Plus className="w-5 h-5 mr-3" />
-                    Manual Orders
-                  </a>
+                <Link href="/manual"
+                  className={`flex items-center px-4 py-3 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 
+                    ${
+                      location === "/manual"
+                        ? "bg-primary-50 text-primary-600 dark:bg-gray-700"
+                        : ""
+                    }`}
+                >
+                  <Plus className="w-5 h-5 mr-3" />
+                  Manual Orders
                 </Link>
               </li>
               <li>
-                <Link href="/accounts">
-                  <a
-                    className={`flex items-center px-4 py-3 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 
-                      ${
-                        location === "/accounts"
-                          ? "bg-primary-50 text-primary-600 dark:bg-gray-700"
-                          : ""
-                      }`}
-                  >
-                    <Users className="w-5 h-5 mr-3" />
-                    Accounts
-                  </a>
+                <Link href="/accounts"
+                  className={`flex items-center px-4 py-3 rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 
+                    ${
+                      location === "/accounts"
+                        ? "bg-primary-50 text-primary-600 dark:bg-gray-700"
+                        : ""
+                    }`}
+                >
+                  <Users className="w-5 h-5 mr-3" />
+                  Accounts
                 </Link>
               </li>
             </ul>
