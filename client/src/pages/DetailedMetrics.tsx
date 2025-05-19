@@ -89,18 +89,19 @@ const DetailedMetrics = () => {
         bollingerChartInstance.current.destroy();
         bollingerChartInstance.current = null;
       }
-      if (premiumDistChartInstance.current) {
-        premiumDistChartInstance.current.destroy();
-        premiumDistChartInstance.current = null;
-      }
     };
 
+    // Clean up existing charts
+    cleanup();
+
+    // Don't initialize if data isn't ready
     if (historyLoading || !bandDataHistory.length || !quoteHistory.length) {
-      cleanup();
       return;
     }
 
-    const initializeCharts = () => {
+    // Wait for next tick to ensure DOM is ready
+    setTimeout(() => {
+      const initializeCharts = () => {
       // Premium Metrics Chart
       if (activeTab === "premiumMetrics" && premiumChartRef.current) {
         if (premiumChartInstance.current) {
@@ -163,22 +164,10 @@ const DetailedMetrics = () => {
     };
 
     initializeCharts();
+    }, 0);
     
     // Cleanup chart instances on unmount
-    return () => {
-      if (premiumChartInstance.current) {
-        premiumChartInstance.current.destroy();
-        premiumChartInstance.current = null;
-      }
-      if (bollingerChartInstance.current) {
-        bollingerChartInstance.current.destroy();
-        bollingerChartInstance.current = null;
-      }
-      if (premiumDistChartInstance.current) {
-        premiumDistChartInstance.current.destroy();
-        premiumDistChartInstance.current = null;
-      }
-    };
+    return cleanup;
   }, [activeTab, historyLoading, bandDataHistory, quoteHistory]);
   
   // Update trading conditions randomly every 30 seconds
