@@ -22,6 +22,8 @@ export const accounts = pgTable("accounts", {
   apiKey: text("api_key").notNull(),
   apiSecret: text("api_secret").notNull(),
   accountNumber: text("account_number"),
+  refreshToken: text("refresh_token"),
+  percentToTrade: numeric("percent_to_trade", { precision: 3, scale: 2 }).default("0.5"),
   active: boolean("active").notNull().default(true),
 });
 

@@ -34,10 +34,12 @@ const Accounts = () => {
   // Form state
   const [accountForm, setAccountForm] = useState<NewAccount>({
     name: "",
-    broker: "Interactive Brokers",
+    broker: "",
     apiKey: "",
     apiSecret: "",
     accountNumber: "",
+    refreshToken: "", // Added refresh token
+    percentToTrade: 0.5, // Added percent to trade (0-1)
     active: true,
   });
 
@@ -62,10 +64,12 @@ const Accounts = () => {
       // Reset form after successful creation
       setAccountForm({
         name: "",
-        broker: "Interactive Brokers",
+        broker: "",
         apiKey: "",
         apiSecret: "",
         accountNumber: "",
+        refreshToken: "",
+        percentToTrade: 0.5,
         active: true,
       });
       setShowAddDialog(false);
@@ -148,13 +152,34 @@ const Accounts = () => {
           <form onSubmit={handleCreateAccount}>
             <div className="grid gap-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="accountName">Account Name</Label>
+                <Label htmlFor="accountName">Name</Label>
                 <Input
                   id="accountName"
                   value={accountForm.name}
                   onChange={(e) => handleFormChange("name", e.target.value)}
                   placeholder="Enter account name"
                   required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="broker">Broker</Label>
+                <Input
+                  id="broker"
+                  value={accountForm.broker}
+                  onChange={(e) => handleFormChange("broker", e.target.value)}
+                  placeholder="Enter broker name"
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="accountNumber">Account Number</Label>
+                <Input
+                  id="accountNumber"
+                  value={accountForm.accountNumber}
+                  onChange={(e) => handleFormChange("accountNumber", e.target.value)}
+                  placeholder="Enter account number"
                 />
               </div>
               
@@ -185,39 +210,29 @@ const Accounts = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="broker">Broker</Label>
-                <Select
-                  value={accountForm.broker}
-                  onValueChange={(value) => handleFormChange("broker", value)}
-                >
-                  <SelectTrigger id="broker">
-                    <SelectValue placeholder="Select broker" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Interactive Brokers">Interactive Brokers</SelectItem>
-                    <SelectItem value="TD Ameritrade">TD Ameritrade</SelectItem>
-                    <SelectItem value="E*Trade">E*Trade</SelectItem>
-                    <SelectItem value="Schwab">Schwab</SelectItem>
-                    <SelectItem value="Tastytrade">Tastytrade</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="refreshToken">Refresh Token</Label>
+                <Input
+                  id="refreshToken"
+                  type="password"
+                  value={accountForm.refreshToken}
+                  onChange={(e) => handleFormChange("refreshToken", e.target.value)}
+                  placeholder="Enter refresh token (if applicable)"
+                />
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="accountType">Account Type</Label>
-                <Select
-                  onValueChange={(value) => {}}
-                  defaultValue="live"
-                >
-                  <SelectTrigger id="accountType">
-                    <SelectValue placeholder="Select account type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="live">Live Trading</SelectItem>
-                    <SelectItem value="paper">Paper Trading</SelectItem>
-                    <SelectItem value="demo">Demo Account</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="percentToTrade">Percent to Trade (0-1)</Label>
+                <Input
+                  id="percentToTrade"
+                  type="number"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={accountForm.percentToTrade}
+                  onChange={(e) => handleFormChange("percentToTrade", parseFloat(e.target.value))}
+                  placeholder="Enter percent to trade (0-1)"
+                  required
+                />
               </div>
               
               <div className="flex items-center justify-between">
@@ -252,7 +267,7 @@ const Accounts = () => {
             
             <div className="grid gap-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="edit-name">Account Name</Label>
+                <Label htmlFor="edit-name">Name</Label>
                 <Input
                   id="edit-name"
                   value={editingAccount.name}
@@ -262,6 +277,34 @@ const Accounts = () => {
                     )
                   }
                   placeholder="Enter account name"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-broker">Broker</Label>
+                <Input
+                  id="edit-broker"
+                  value={editingAccount.broker}
+                  onChange={(e) => 
+                    setEditingAccount((prev) => 
+                      prev ? { ...prev, broker: e.target.value } : null
+                    )
+                  }
+                  placeholder="Enter broker name"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-accountNumber">Account Number</Label>
+                <Input
+                  id="edit-accountNumber"
+                  value={editingAccount.accountNumber}
+                  onChange={(e) => 
+                    setEditingAccount((prev) => 
+                      prev ? { ...prev, accountNumber: e.target.value } : null
+                    )
+                  }
+                  placeholder="Enter account number"
                 />
               </div>
               
@@ -298,26 +341,36 @@ const Accounts = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="edit-broker">Broker</Label>
-                <Select
-                  value={editingAccount.broker}
-                  onValueChange={(value) => 
+                <Label htmlFor="edit-refreshToken">Refresh Token</Label>
+                <Input
+                  id="edit-refreshToken"
+                  type="password"
+                  value={editingAccount.refreshToken || ''}
+                  onChange={(e) => 
                     setEditingAccount((prev) => 
-                      prev ? { ...prev, broker: value } : null
+                      prev ? { ...prev, refreshToken: e.target.value } : null
                     )
                   }
-                >
-                  <SelectTrigger id="edit-broker">
-                    <SelectValue placeholder="Select broker" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Interactive Brokers">Interactive Brokers</SelectItem>
-                    <SelectItem value="TD Ameritrade">TD Ameritrade</SelectItem>
-                    <SelectItem value="E*Trade">E*Trade</SelectItem>
-                    <SelectItem value="Schwab">Schwab</SelectItem>
-                    <SelectItem value="Tastytrade">Tastytrade</SelectItem>
-                  </SelectContent>
-                </Select>
+                  placeholder="Enter refresh token (if applicable)"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-percentToTrade">Percent to Trade (0-1)</Label>
+                <Input
+                  id="edit-percentToTrade"
+                  type="number"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={editingAccount.percentToTrade}
+                  onChange={(e) => 
+                    setEditingAccount((prev) => 
+                      prev ? { ...prev, percentToTrade: parseFloat(e.target.value) } : null
+                    )
+                  }
+                  placeholder="Enter percent to trade (0-1)"
+                />
               </div>
               
               <div className="flex items-center justify-between">

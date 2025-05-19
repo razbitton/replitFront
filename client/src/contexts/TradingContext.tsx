@@ -11,6 +11,8 @@ export type Account = {
   apiKey: string;
   apiSecret: string;
   accountNumber?: string;
+  refreshToken?: string;
+  percentToTrade: number;
   active: boolean;
 };
 
