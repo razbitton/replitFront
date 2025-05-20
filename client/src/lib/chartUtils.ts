@@ -15,10 +15,23 @@ export const commonChartOptions = {
       position: 'top' as const,
       labels: {
         boxWidth: 12,
+        font: {
+          family: 'system-ui',
+          weight: '500',
+        },
       },
     },
     tooltip: {
       usePointStyle: true,
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      titleColor: 'rgb(17, 24, 39)',
+      bodyColor: 'rgb(55, 65, 81)',
+      borderColor: 'rgba(229, 231, 235, 0.5)',
+      borderWidth: 1,
+      padding: 10,
+      bodyFont: {
+        family: 'system-ui',
+      },
     },
   },
   scales: {
@@ -26,9 +39,22 @@ export const commonChartOptions = {
       grid: {
         display: false,
       },
+      ticks: {
+        font: {
+          family: 'system-ui',
+        },
+      },
     },
     y: {
       beginAtZero: false,
+      grid: {
+        color: 'rgba(229, 231, 235, 0.3)',
+      },
+      ticks: {
+        font: {
+          family: 'system-ui',
+        },
+      },
     },
   },
 };
@@ -61,26 +87,29 @@ export const preparePremiumChartData = (bandDataHistory: BandData[]) => {
         {
           label: 'Premium',
           data: Array(14).fill(null),
-          borderColor: 'rgba(59, 130, 246, 1)',
-          backgroundColor: 'rgba(59, 130, 246, 0.1)',
-          tension: 0.4,
+          borderColor: 'rgba(99, 102, 241, 1)', // Indigo
+          backgroundColor: 'rgba(99, 102, 241, 0.15)',
+          tension: 0.5,
           fill: true,
+          borderWidth: 2,
         },
         {
           label: 'Upper Band',
           data: Array(14).fill(null),
-          borderColor: 'rgba(209, 213, 219, 1)',
+          borderColor: 'rgba(244, 114, 182, 0.8)', // Pink
           borderDash: [5, 5],
-          tension: 0.1,
+          tension: 0.4,
           fill: false,
+          borderWidth: 2,
         },
         {
           label: 'Lower Band',
           data: Array(14).fill(null),
-          borderColor: 'rgba(209, 213, 219, 1)',
+          borderColor: 'rgba(52, 211, 153, 0.8)', // Emerald
           borderDash: [5, 5],
-          tension: 0.1,
+          tension: 0.4,
           fill: false,
+          borderWidth: 2,
         },
       ],
     };
@@ -133,10 +162,12 @@ export const prepareAssetChartData = (quoteHistory: QuoteData[]) => {
         {
           label: 'Asset Price',
           data: Array(14).fill(null),
-          borderColor: 'rgba(16, 185, 129, 1)',
-          backgroundColor: 'rgba(16, 185, 129, 0.1)',
-          tension: 0.4,
+          borderColor: 'rgba(139, 92, 246, 1)', // Violet
+          backgroundColor: 'rgba(139, 92, 246, 0.15)',
+          tension: 0.5,
           fill: true,
+          borderWidth: 2.5,
+          pointRadius: 0,
         },
       ],
     };
