@@ -31,9 +31,16 @@ const LogsTable = () => {
     : logs.filter(log => log.level === selectedLogLevel);
   
   // Format timestamp to display only time
-  const formatTime = (timestamp: string) => {
+  const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    return date.toLocaleString([], { 
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
   };
 
   // Style badge based on log level
@@ -80,7 +87,7 @@ const LogsTable = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Time</TableHead>
+                <TableHead>Timestamp</TableHead>
                 <TableHead>Level</TableHead>
                 <TableHead>Message</TableHead>
               </TableRow>
@@ -106,7 +113,7 @@ const LogsTable = () => {
                 filteredLogs.slice(0, 100).map((log) => (
                   <TableRow key={log.id}>
                     <TableCell className="whitespace-nowrap font-mono">
-                      {formatTime(log.timestamp)}
+                      {formatTimestamp(log.timestamp)}
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
                       <span

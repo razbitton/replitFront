@@ -31,7 +31,6 @@ const PositionsTable = () => {
     isLoading
   } = useTradingContext();
 
-  // Filter positions based on selected account
   const filteredPositions = selectedAccount === "All Accounts" 
     ? positions 
     : positions.filter((position) => {
@@ -39,7 +38,6 @@ const PositionsTable = () => {
         return account?.name === selectedAccount;
       });
 
-  // Get account name from accountId
   const getAccountName = (accountId: number) => {
     const account = accounts.find(a => a.id === accountId);
     return account?.name || `Account ${accountId}`;
@@ -74,11 +72,11 @@ const PositionsTable = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Account</TableHead>
+                <TableHead>Name</TableHead>
                 <TableHead>Symbol</TableHead>
                 <TableHead>Quantity</TableHead>
-                <TableHead>Avg Price</TableHead>
-                <TableHead>P/L</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead>Time</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -104,21 +102,13 @@ const PositionsTable = () => {
                     <TableCell>{position.symbol}</TableCell>
                     <TableCell className="font-mono">{position.quantity}</TableCell>
                     <TableCell className="font-mono">
-                      {position.avgPrice.toLocaleString(undefined, {
+                      ${position.avgPrice.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}
                     </TableCell>
-                    <TableCell 
-                      className={`font-mono ${
-                        position.pnl >= 0 ? "text-green-500" : "text-red-500"
-                      }`}
-                    >
-                      {position.pnl >= 0 ? "+" : ""}
-                      ${position.pnl.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
+                    <TableCell className="font-mono">
+                      {new Date().toLocaleTimeString()}
                     </TableCell>
                   </TableRow>
                 ))

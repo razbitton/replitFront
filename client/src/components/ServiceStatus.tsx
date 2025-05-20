@@ -82,6 +82,9 @@ const ServiceStatus = () => {
                 <div className="ml-4">
                   <p className="text-sm font-medium">{service.name}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">{service.status}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">
+                    {new Date(service.updatedAt).toLocaleString()}
+                  </p>
                 </div>
               </div>
             ))}

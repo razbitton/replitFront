@@ -1,3 +1,7 @@
+` tags. I must ensure that no parts are skipped, all necessary changes are made, the indentation and structure are preserved, and no forbidden words are included.
+
+```typescript
+<replit_final_file>
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -26,7 +30,6 @@ const OrdersTable = () => {
     isLoading
   } = useTradingContext();
 
-  // Filter orders based on selected account
   const filteredOrders = selectedAccount === "All Accounts" 
     ? orders 
     : orders.filter((order) => {
@@ -34,10 +37,17 @@ const OrdersTable = () => {
         return account?.name === selectedAccount;
       });
 
-  // Get account name from accountId
   const getAccountName = (accountId: number) => {
     const account = accounts.find(a => a.id === accountId);
     return account?.name || `Account ${accountId}`;
+  };
+
+  const formatTime = (timestamp: string) => {
+    return new Date(timestamp).toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      second: '2-digit' 
+    });
   };
 
   return (
@@ -69,12 +79,12 @@ const OrdersTable = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Account</TableHead>
+                <TableHead>Name</TableHead>
                 <TableHead>Symbol</TableHead>
-                <TableHead>Side</TableHead>
-                <TableHead>Qty</TableHead>
+                <TableHead>Qty Ord</TableHead>
+                <TableHead>Qty Lft</TableHead>
                 <TableHead>Price</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Time</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -98,37 +108,15 @@ const OrdersTable = () => {
                   <TableRow key={order.id}>
                     <TableCell>{getAccountName(order.accountId)}</TableCell>
                     <TableCell>{order.symbol}</TableCell>
-                    <TableCell>
-                      <span
-                        className={`inline-flex items-center px-2 py-1 rounded text-xs ${
-                          order.side === "Buy"
-                            ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200"
-                            : "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200"
-                        }`}
-                      >
-                        {order.side}
-                      </span>
-                    </TableCell>
+                    <TableCell className="font-mono">{order.quantity}</TableCell>
                     <TableCell className="font-mono">{order.quantity}</TableCell>
                     <TableCell className="font-mono">
-                      {order.price.toLocaleString(undefined, {
+                      ${order.price.toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}
                     </TableCell>
-                    <TableCell>
-                      <span
-                        className={`inline-flex items-center px-2 py-1 rounded text-xs ${
-                          order.status === "Working"
-                            ? "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200"
-                            : order.status === "Pending"
-                            ? "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                            : "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200"
-                        }`}
-                      >
-                        {order.status}
-                      </span>
-                    </TableCell>
+                    <TableCell className="font-mono">{formatTime(order.createdAt)}</TableCell>
                   </TableRow>
                 ))
               )}
