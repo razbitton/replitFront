@@ -1,7 +1,3 @@
-` tags. I must ensure that no parts are skipped, all necessary changes are made, the indentation and structure are preserved, and no forbidden words are included.
-
-```typescript
-<replit_final_file>
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
