@@ -10,6 +10,7 @@ import {
   prepareBollingerMetricsData,
   commonChartOptions
 } from "@/lib/chartUtils";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 // Register Chart.js components
 Chart.register(...registerables);
@@ -406,13 +407,15 @@ const DetailedMetrics = () => {
             <TabsContent value="premiumMetrics">
               <div className="mb-6">
                 <h3 className="text-lg font-medium mb-4">Premium Analysis</h3>
-                <div className={`bg-gray-50 dark:bg-gray-700 p-6 rounded-lg ${isLoading ? 'h-[300px] flex items-center justify-center' : ''}`}>
-                  {isLoading ? (
-                    <Skeleton className="h-[260px] w-full" />
-                  ) : (
-                    <canvas id="premiumChart" height="300" ref={premiumChartRef}></canvas>
-                  )}
-                </div>
+                <ScrollArea className="h-[400px] w-full">
+                  <div className={`bg-gray-50 dark:bg-gray-700 p-6 rounded-lg min-w-[800px] ${isLoading ? 'h-[300px] flex items-center justify-center' : ''}`}>
+                    {isLoading ? (
+                      <Skeleton className="h-[260px] w-full" />
+                    ) : (
+                      <canvas id="premiumChart" height="300" ref={premiumChartRef}></canvas>
+                    )}
+                  </div>
+                </ScrollArea>
               </div>
             </TabsContent>
 
@@ -420,13 +423,15 @@ const DetailedMetrics = () => {
             <TabsContent value="bollingerMetrics">
               <div className="mb-6">
                 <h3 className="text-lg font-medium mb-4">Asset Price with Bollinger Bands</h3>
-                <div className={`bg-gray-50 dark:bg-gray-700 p-6 rounded-lg ${isLoading ? 'h-[300px] flex items-center justify-center' : ''}`}>
-                  {isLoading ? (
-                    <Skeleton className="h-[260px] w-full" />
-                  ) : (
-                    <canvas id="bollingerChart" height="300" ref={bollingerChartRef}></canvas>
-                  )}
-                </div>
+                <ScrollArea className="h-[400px] w-full">
+                  <div className={`bg-gray-50 dark:bg-gray-700 p-6 rounded-lg min-w-[800px] ${isLoading ? 'h-[300px] flex items-center justify-center' : ''}`}>
+                    {isLoading ? (
+                      <Skeleton className="h-[260px] w-full" />
+                    ) : (
+                      <canvas id="bollingerChart" height="300" ref={bollingerChartRef}></canvas>
+                    )}
+                  </div>
+                </ScrollArea>
               </div>
             </TabsContent>
           </CardContent>
