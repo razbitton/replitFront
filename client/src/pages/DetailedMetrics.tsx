@@ -47,8 +47,31 @@ const DetailedMetrics = () => {
   const premiumChartInstance = useRef<Chart | null>(null);
   const bollingerChartInstance = useRef<Chart | null>(null);
 
+  // Generate dummy data
+  const generateDummyData = () => {
+    const data = [];
+    const now = new Date();
+    for (let i = 0; i < 100; i++) {
+      const timestamp = new Date(now.getTime() - (99 - i) * 60000).toISOString();
+      const baseValue = 100 + Math.sin(i / 10) * 10;
+      data.push({
+        timestamp,
+        premium: baseValue + Math.random() * 5,
+        upperBand: baseValue + 15 + Math.random() * 2,
+        lowerBand: baseValue - 15 + Math.random() * 2,
+        m1Close: baseValue + Math.random() * 8,
+        bollingerUpperBand: baseValue + 20 + Math.random() * 3,
+        bollingerLowerBand: baseValue - 20 + Math.random() * 3
+      });
+    }
+    return data;
+  };
+
   // Initialize and update charts when data or active tab changes
   useEffect(() => {
+    // Use dummy data instead of real data for testing
+    const dummyData = generateDummyData();
+    
     // Cleanup function to destroy existing chart instances
     const cleanup = () => {
       if (premiumChartInstance.current) {
@@ -65,9 +88,8 @@ const DetailedMetrics = () => {
     cleanup();
 
     // Don't initialize if data isn't ready
-    if (isLoading || historicalBandData.length === 0) {
-      return;
-    }
+    // Using dummy data, so we don't need to check for loading or empty data
+    const dummyData = generateDummyData();
 
     // Wait for next tick to ensure DOM is ready
     setTimeout(() => {
@@ -80,7 +102,7 @@ const DetailedMetrics = () => {
 
           const ctx = premiumChartRef.current.getContext("2d");
           if (ctx) {
-            const data = preparePremiumMetricsData(historicalBandData);
+            const data = preparePremiumMetricsData(dummyData);
             premiumChartInstance.current = new Chart(ctx, {
               type: "line",
               data,
@@ -122,7 +144,7 @@ const DetailedMetrics = () => {
 
           const ctx = bollingerChartRef.current.getContext("2d");
           if (ctx) {
-            const data = prepareBollingerMetricsData(historicalBandData);
+            const data = prepareBollingerMetricsData(dummyData);
 
             bollingerChartInstance.current = new Chart(ctx, {
               type: "line",
