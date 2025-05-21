@@ -25,7 +25,7 @@ const DetailedMetrics = () => {
     isLoading 
   } = useTradingContext();
   const [activeTab, setActiveTab] = useState("premiumMetrics");
-  
+
   // Trading conditions for the blocks section
   const [tradingConditions, setTradingConditions] = useState([
     { title: "Threshold Condition", value: Math.random() > 0.5 },
@@ -37,7 +37,7 @@ const DetailedMetrics = () => {
     { title: "Liquidity Condition", value: Math.random() > 0.5 },
     { title: "Position Capacity", value: Math.random() > 0.5 },
   ]);
-  
+
   // Chart refs
   const premiumChartRef = useRef<HTMLCanvasElement>(null);
   const bollingerChartRef = useRef<HTMLCanvasElement>(null);
@@ -76,32 +76,82 @@ const DetailedMetrics = () => {
           if (premiumChartInstance.current) {
             premiumChartInstance.current.destroy();
           }
-          
+
           const ctx = premiumChartRef.current.getContext("2d");
           if (ctx) {
             const data = preparePremiumMetricsData(historicalBandData);
             premiumChartInstance.current = new Chart(ctx, {
               type: "line",
               data,
-              options: commonChartOptions
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                  mode: 'index' as const,
+                  intersect: false,
+                },
+                plugins: {
+                  zoom: {
+                    pan: {
+                      enabled: true,
+                      mode: 'x',
+                      modifierKey: 'ctrl',
+                    },
+                    zoom: {
+                      wheel: {
+                        enabled: true,
+                      },
+                      pinch: {
+                        enabled: true,
+                      },
+                      mode: 'x',
+                    }
+                  }
+                },
+              }
             });
           }
         }
-        
+
         // Bollinger Bands Chart
         if (activeTab === "bollingerMetrics" && bollingerChartRef.current) {
           if (bollingerChartInstance.current) {
             bollingerChartInstance.current.destroy();
           }
-          
+
           const ctx = bollingerChartRef.current.getContext("2d");
           if (ctx) {
             const data = prepareBollingerMetricsData(historicalBandData);
-            
+
             bollingerChartInstance.current = new Chart(ctx, {
               type: "line",
               data,
-              options: commonChartOptions
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                  mode: 'index' as const,
+                  intersect: false,
+                },
+                plugins: {
+                  zoom: {
+                    pan: {
+                      enabled: true,
+                      mode: 'x',
+                      modifierKey: 'ctrl',
+                    },
+                    zoom: {
+                      wheel: {
+                        enabled: true,
+                      },
+                      pinch: {
+                        enabled: true,
+                      },
+                      mode: 'x',
+                    }
+                  }
+                },
+              }
             });
           }
         }
@@ -109,76 +159,76 @@ const DetailedMetrics = () => {
 
       initializeCharts();
     }, 0);
-    
+
     // Cleanup chart instances on unmount
     return cleanup;
   }, [activeTab, isLoading, historicalBandData]);
-  
+
   // Update charts when new band data arrives
   useEffect(() => {
     if (!bandData || isLoading) return;
-    
+
     // Update Premium Metrics chart
     if (premiumChartInstance.current && activeTab === "premiumMetrics") {
       const chart = premiumChartInstance.current;
-      
+
       // Add new data point
       if (chart.data.labels && chart.data.datasets && chart.data.datasets.length >= 3) {
         const timeLabel = new Date(bandData.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        
+
         // Add new label
         chart.data.labels.push(timeLabel);
         if (chart.data.labels.length > 100) {
           chart.data.labels.shift(); // Remove oldest if we have more than 100 points
         }
-        
+
         // Add new data points
         chart.data.datasets[0].data.push(bandData.premium);
         chart.data.datasets[1].data.push(bandData.upperBand);
         chart.data.datasets[2].data.push(bandData.lowerBand);
-        
+
         // Remove oldest data points if we have more than 100
         if (chart.data.datasets[0].data.length > 100) {
           chart.data.datasets[0].data.shift();
           chart.data.datasets[1].data.shift();
           chart.data.datasets[2].data.shift();
         }
-        
+
         chart.update();
       }
     }
-    
+
     // Update Bollinger Bands chart
     if (bollingerChartInstance.current && activeTab === "bollingerMetrics") {
       const chart = bollingerChartInstance.current;
-      
+
       // Add new data point
       if (chart.data.labels && chart.data.datasets && chart.data.datasets.length >= 3) {
         const timeLabel = new Date(bandData.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        
+
         // Add new label
         chart.data.labels.push(timeLabel);
         if (chart.data.labels.length > 100) {
           chart.data.labels.shift(); // Remove oldest if we have more than 100 points
         }
-        
+
         // Add new data points
         chart.data.datasets[0].data.push(bandData.m1Close);
         chart.data.datasets[1].data.push(bandData.bollingerUpperBand);
         chart.data.datasets[2].data.push(bandData.bollingerLowerBand);
-        
+
         // Remove oldest data points if we have more than 100
         if (chart.data.datasets[0].data.length > 100) {
           chart.data.datasets[0].data.shift();
           chart.data.datasets[1].data.shift();
           chart.data.datasets[2].data.shift();
         }
-        
+
         chart.update();
       }
     }
   }, [bandData, isLoading, activeTab]);
-  
+
   // Update trading conditions randomly every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
@@ -189,14 +239,14 @@ const DetailedMetrics = () => {
         }))
       );
     }, 30000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
   // Determine if currently in trading window
   const inTradingWindow = useMemo(() => {
     if (!dailyParameters || !globalSettings || !dailyParameters.length) return false;
-    
+
     // For simplicity, using the first day's parameters or a general setting
     // A more robust solution would find today's specific parameters
     const todayParams = dailyParameters[0]; // Or find based on current day
@@ -224,7 +274,7 @@ const DetailedMetrics = () => {
 
     const now = new Date();
     const [startHours, startMinutes] = globalSettings.tradingStartTime.split(':').map(Number);
-    
+
     const nextStartTime = new Date(now);
     nextStartTime.setHours(startHours, startMinutes, 0, 0);
 
@@ -258,7 +308,7 @@ const DetailedMetrics = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         {/* Asset Price Card */}
         <Card>
           <CardContent className="p-6">
@@ -290,7 +340,7 @@ const DetailedMetrics = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         {/* VIX Price Card */}
         <Card>
           <CardContent className="p-6">
@@ -321,7 +371,7 @@ const DetailedMetrics = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         {/* Trading Window Card */}
         <Card>
           <CardContent className="p-6">
@@ -339,7 +389,7 @@ const DetailedMetrics = () => {
           </CardContent>
         </Card>
       </div>
-      
+
       {/* Tab Navigation */}
       <Card>
         <Tabs defaultValue="premiumMetrics" value={activeTab} onValueChange={setActiveTab}>
@@ -349,7 +399,7 @@ const DetailedMetrics = () => {
               <TabsTrigger className="data-[state=active]:border-primary-500 py-4 px-6" value="bollingerMetrics">Bollinger Metrics</TabsTrigger>
             </TabsList>
           </CardHeader>
-          
+
           {/* Tab Contents */}
           <CardContent className="p-6">
             {/* Premium Metrics Tab */}
@@ -365,7 +415,7 @@ const DetailedMetrics = () => {
                 </div>
               </div>
             </TabsContent>
-            
+
             {/* Bollinger Metrics Tab */}
             <TabsContent value="bollingerMetrics">
               <div className="mb-6">
@@ -382,7 +432,7 @@ const DetailedMetrics = () => {
           </CardContent>
         </Tabs>
       </Card>
-      
+
       {/* Trading Condition Blocks */}
       <div className="mt-6">
         <h3 className="text-lg font-medium mb-4">Trading Conditions</h3>
