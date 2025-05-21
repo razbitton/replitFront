@@ -1,0 +1,20 @@
+{
+  "global": {
+    "futureSymbol": "VXM25",
+    "marginRequirement": 24000,
+    "expirationDate": "2025-05-21T00:00:00",
+    "expirationTime": "16:00:00",
+    "signalCalculationStartTime": "15:15:00",
+    "tradingStartTime": "16:00:00",
+    "globalEndTime": "23:00:00",
+    "initialMargin": 5000,
+    "maintenanceMargin": 4000,
+    "contractSize": 50,
+    "tickValue": 12.5,
+    "tradingHoursStart": "09:30",
+    "tradingHoursEnd": "16:00",
+    "maxPositionSize": 10,
+    "maxDailyLoss": 1000,
+    "targetProfit": 2000
+  }
+}

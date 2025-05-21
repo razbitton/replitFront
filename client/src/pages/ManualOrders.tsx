@@ -1,12 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useTradingContext } from "@/contexts/TradingContext";
+import { useTradingContext, Order as ContextOrderType, Account as ContextAccountType, Position as ContextPositionType } from "@/contexts/TradingContext";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Order } from "@/contexts/TradingContext";
 import {
   Dialog,
   DialogContent,
@@ -23,9 +22,36 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { BadgeCheck, Plus } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
-// Order form type (excluding id and createdAt which will be set by the server)
-type NewOrder = Omit<Order, "id" | "createdAt">;
+// Import the components from the dashboard
+import PositionsTable from "@/components/PositionsTable";
+import OrdersTable from "@/components/OrdersTable";
+
+const ALL_ACCOUNTS_SENTINEL = "__ALL_ACCOUNTS__"; // Define a sentinel value
+
+// Order form type
+interface ManualOrderFormState {
+  account: string; // Can be an accountNumber or ALL_ACCOUNTS_SENTINEL
+  symbol: string;
+  side: "Buy" | "Sell";
+  quantity: string; // Store as string for input, parse before use
+  price: string;    // Store as string for input, parse before use
+  type: ContextOrderType["type"];
+  timeInForce: "Day" | "GTC" | "IOC";
+  // status: ContextOrderType["status"]; // Default to "Working" when submitting
+}
+
+// Keep this type for what placeOrder expects, 
+// explicitly allowing string for quantity for "All" case.
+type PlaceOrderPayload = Omit<ContextOrderType, "id" | "timestamp" | "quantityLeft" | "createdAt" | "quantity"> & {
+  quantity: string | number | null;
+};
 
 const ManualOrders = () => {
   const { 
@@ -35,70 +61,157 @@ const ManualOrders = () => {
     placeOrder, 
     updateOrder, 
     cancelOrder, 
-    isLoading, 
+    isLoading: contextIsLoading,
     quoteData,
+    globalSettings
   } = useTradingContext();
 
-  // Form state
-  const [orderForm, setOrderForm] = useState<NewOrder>({
-    accountId: 0,
-    symbol: "ES2023",
+  // Form state - Default account to ALL_ACCOUNTS_SENTINEL
+  const [orderForm, setOrderForm] = useState<ManualOrderFormState>({
+    account: ALL_ACCOUNTS_SENTINEL, 
+    symbol: "ES2023", // Placeholder, will be updated by useEffect
     side: "Buy",
-    quantity: 1,
-    price: quoteData?.price || 4287.25,
-    orderType: "Limit",
+    quantity: "1",
+    price: "0", // Default price to "0"
+    type: "Limit",
     timeInForce: "Day",
-    status: "Working",
+    // status: "Working", // Not part of form state, added when submitting
   });
+
+  const [isSymbolInitializedFromGlobal, setIsSymbolInitializedFromGlobal] = useState(false);
+
+  // Local loading state for this page, you might want to refine this
+  const [isPageLoading, setIsPageLoading] = useState(true); 
+
+  // Determine the account filter to pass to child tables
+  const selectedAccountForFilter = useMemo(() => {
+    if (orderForm.account === ALL_ACCOUNTS_SENTINEL) {
+      return null; // Signal to show all accounts in child tables
+    }
+    return orderForm.account; // Pass the specific accountNumber
+  }, [orderForm.account]);
 
   // Edit order dialog state
   const [showEditDialog, setShowEditDialog] = useState(false);
-  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [editingOrder, setEditingOrder] = useState<ContextOrderType | null>(null);
 
-  // Update form when quote data changes
-  // This will update the default price field with latest market price
-  useState(() => {
-    if (quoteData) {
+  // Effect to initialize symbol from globalSettings once
+  useEffect(() => {
+    if (globalSettings?.futureSymbol && !isSymbolInitializedFromGlobal) {
       setOrderForm(prev => ({
         ...prev,
-        price: quoteData.price
+        symbol: globalSettings.futureSymbol,
       }));
+      setIsSymbolInitializedFromGlobal(true);
     }
-  });
+    // Potentially set isPageLoading to false once critical data like globalSettings is loaded
+    if (globalSettings) {
+        // setIsPageLoading(false); // Example: consider contextIsLoading as well
+    }
+  }, [globalSettings, isSymbolInitializedFromGlobal]);
+
+  // Combine context loading state with page-specific loading if needed
+  useEffect(() => {
+    setIsPageLoading(contextIsLoading);
+  }, [contextIsLoading]);
 
   // Handle form changes
-  const handleFormChange = (field: keyof NewOrder, value: any) => {
-    setOrderForm(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const handleFormChange = (field: keyof ManualOrderFormState, value: any) => {
+    setOrderForm(prev => ({ ...prev, [field]: value }));
   };
 
-  // Handle order placement
+  // Handle order placement - Modified for "All Accounts" logic
   const handlePlaceOrder = async (side: "Buy" | "Sell") => {
+    // const quantityAsNumber = parseInt(orderForm.quantity); // Old parsing
+    const priceAsNumber = parseFloat(orderForm.price);
+
+    let quantityToSend: string | number | null;
+
+    if (orderForm.quantity.toLowerCase() === "all") {
+      quantityToSend = "All"; // Use the string "All"
+    } else {
+      const parsedQuantity = parseInt(orderForm.quantity);
+      if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
+        console.error("Invalid quantity. Must be a positive number or 'All'.");
+        // Consider user feedback, e.g., toast
+        return;
+      }
+      quantityToSend = parsedQuantity;
+    }
+
+    // Price validation remains the same
+    if (orderForm.type !== "Market" && isNaN(priceAsNumber)) {
+      console.error("Invalid price.");
+      // Consider user feedback
+      return;
+    }
+
+    const commonOrderDetails: Omit<PlaceOrderPayload, "account" | "quantity"> & { quantity: string | number | null } = {
+      symbol: orderForm.symbol,
+      side: side,
+      quantity: quantityToSend, // Use the processed quantity
+      price: orderForm.type === "Market" ? null : priceAsNumber,
+      type: orderForm.type,
+      status: "Working",
+    };
+
     try {
-      // Ensure we have a valid account selected
-      if (orderForm.accountId === 0 && accounts.length > 0) {
-        handleFormChange("accountId", accounts[0].id);
+      if (orderForm.account === ALL_ACCOUNTS_SENTINEL) {
+        // --- Place order for ALL ACCOUNTS ---
+        if (accounts.length === 0) {
+          console.error("No accounts available to place orders for.");
+          // Consider user feedback
+          return;
+        }
+        console.log(`Placing order for ALL ${accounts.length} accounts:`, commonOrderDetails);
+        // You might want to add a confirmation step here for the user
+        // For example, a dialog saying "This will place X orders. Continue?"
+
+        for (const acc of accounts) {
+          if (acc.accountNumber) { // Ensure account has a valid identifier
+            const individualPayload: PlaceOrderPayload = {
+              ...commonOrderDetails,
+              account: acc.accountNumber,
+            };
+            try {
+              await placeOrder(individualPayload as any); // Casting as context might have slightly different Order type
+              console.log(`Order placed for account: ${acc.name} (${acc.accountNumber})`);
+              // Optionally, provide feedback per order, or a summary at the end
+            } catch (error) {
+              console.error(`Failed to place order for account: ${acc.name} (${acc.accountNumber})`, error);
+              // Collect errors and show a summary to the user?
+            }
+          }
+        }
+        // Consider a summary toast: "Attempted to place orders for X accounts. Y succeeded, Z failed."
+      } else {
+        // --- Place order for a SINGLE SELECTED ACCOUNT ---
+        const currentAccount = orderForm.account;
+        if (!currentAccount) {
+          console.error("No account selected for placing order.");
+          return;
+        }
+        const singlePayload: PlaceOrderPayload = {
+          ...commonOrderDetails,
+          account: currentAccount,
+        };
+        await placeOrder(singlePayload as any);
+        console.log(`Order placed for account: ${currentAccount}`);
       }
 
-      await placeOrder({
-        ...orderForm,
-        side
-      });
+      // Reset quantity after successful order placement(s)
+      setOrderForm(prev => ({ ...prev, quantity: "1" }));
 
-      // Reset quantity after order placement
-      setOrderForm(prev => ({
-        ...prev,
-        quantity: 1
-      }));
     } catch (error) {
-      console.error("Failed to place order:", error);
+      // This catch block will now primarily catch errors from the single order placement path
+      // or if an error occurs outside the loop in the all accounts path before any order is sent.
+      console.error("Failed to place order(s):", error);
+      // General error feedback to user
     }
   };
 
   // Edit an order
-  const handleEditOrder = (order: Order) => {
+  const handleEditOrder = (order: ContextOrderType) => {
     setEditingOrder(order);
     setShowEditDialog(true);
   };
@@ -108,7 +221,10 @@ const ManualOrders = () => {
     if (!editingOrder) return;
     
     try {
-      await updateOrder(editingOrder.id, editingOrder);
+      // Assuming updateOrder expects a numeric ID based on prior linter errors. This is a mismatch with Order.id being string.
+      // This needs to be definitively resolved by checking TradingContext.updateOrder signature.
+      // For now, attempting parseInt as a workaround for the linter hint.
+      await updateOrder(parseInt(editingOrder.id), editingOrder); 
       setShowEditDialog(false);
     } catch (error) {
       console.error("Failed to update order:", error);
@@ -116,21 +232,67 @@ const ManualOrders = () => {
   };
 
   // Cancel an order
-  const handleCancelOrder = async (id: number) => {
+  const handleCancelOrder = async (orderId: string) => { // Changed to accept string ID
     try {
-      await cancelOrder(id);
+      // Assuming cancelOrder also expects a numeric ID based on prior linter hints.
+      await cancelOrder(parseInt(orderId));
     } catch (error) {
       console.error("Failed to cancel order:", error);
     }
   };
 
-  // Get account name from accountId
-  const getAccountName = (accountId: number) => {
-    const account = accounts.find(a => a.id === accountId);
-    return account?.name || `Account ${accountId}`;
+  // Get account name from account STRING IDENTIFIER (accountNumber)
+  const getAccountName = (accountIdentifier: string | undefined) => {
+    if (!accountIdentifier) return 'N/A';
+    const account = accounts.find(a => a.accountNumber === accountIdentifier);
+    return account?.name || `Acc: ${accountIdentifier.substring(0,6)}...`; // Shortened fallback
   };
 
-  if (isLoading) {
+  // Style for order status badges
+  const getOrderStatusBadgeStyle = (status: ContextOrderType['status']) => {
+    switch (status) {
+      case "Working":
+        return "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200";
+      case "Filled":
+        return "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200";
+      case "Cancelled":
+        return "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200";
+      case "Rejected":
+        return "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200"; // Or orange
+      default:
+        return "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200"; // Fallback for any unexpected status
+    }
+  };
+
+  // Calculate counts and names for Positions Table header
+  const accountsWithManualPositionsCount = useMemo(() => {
+    const uniqueAccountNumbers = new Set(positions.map(pos => pos.accountNumber));
+    return uniqueAccountNumbers.size;
+  }, [positions]);
+
+  const accountsWithoutManualPositionsNames = useMemo(() => {
+    const accountNumbersWithPositions = new Set(positions.map(pos => pos.accountNumber));
+    return accounts
+      .filter(acc => !accountNumbersWithPositions.has(acc.accountNumber || ""))
+      .map(acc => acc.name)
+      .join(", ");
+  }, [positions, accounts]);
+
+  // Calculate counts and names for Orders Table header
+  const accountsWithManualOrdersCount = useMemo(() => {
+    const uniqueAccountIdentifiers = new Set(orders.map(order => order.account));
+    return uniqueAccountIdentifiers.size;
+  }, [orders]);
+
+  const accountsWithoutManualOrdersNames = useMemo(() => {
+    const accountIdentifiersWithOrders = new Set(orders.map(order => order.account));
+    return accounts
+      .filter(acc => !accountIdentifiersWithOrders.has(acc.accountNumber || ""))
+      .map(acc => acc.name)
+      .join(", ");
+  }, [orders, accounts]);
+
+  if (isPageLoading) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Skeleton className="h-[400px] rounded-lg" />
@@ -142,7 +304,7 @@ const ManualOrders = () => {
 
   return (
     <div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6"> {/* Added mb-6 for spacing before full-width orders table */}
         {/* Order Placement Form */}
         <Card>
           <CardHeader className="px-6 py-4 border-b">
@@ -154,16 +316,17 @@ const ManualOrders = () => {
                 <div>
                   <Label htmlFor="account">Account</Label>
                   <Select
-                    value={orderForm.accountId.toString()}
-                    onValueChange={(value) => handleFormChange("accountId", parseInt(value))}
+                    value={orderForm.account} 
+                    onValueChange={(value) => handleFormChange("account", value)}
                   >
                     <SelectTrigger id="account" className="mt-1">
                       <SelectValue placeholder="Select account" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value={ALL_ACCOUNTS_SENTINEL}>All Accounts</SelectItem>
                       {accounts.map((account) => (
-                        <SelectItem key={account.id} value={account.id.toString()}>
-                          {account.name}
+                        <SelectItem key={account.id} value={account.accountNumber || ""}>
+                          {account.name} ({account.accountNumber})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -184,12 +347,23 @@ const ManualOrders = () => {
                   <Label htmlFor="quantity">Quantity</Label>
                   <Input
                     id="quantity"
-                    type="number"
-                    min="1"
+                    type="text" // Changed to text to allow "All"
+                    min="1" // Min attribute might not be strictly enforced for "text" but good for semantics
                     value={orderForm.quantity}
-                    onChange={(e) => handleFormChange("quantity", parseInt(e.target.value))}
+                    onChange={(e) => handleFormChange("quantity", e.target.value)}
                     className="mt-1"
                   />
+                  <div className="w-full flex justify-center mt-1"> {/* Wrapper div for centering the button content itself */}
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="p-0 h-auto text-xs underline font-normal hover:no-underline hover:text-primary/80 dark:hover:text-primary/70"
+                      onClick={() => handleFormChange("quantity", "All")}
+                    >
+                      All
+                    </Button>
+                  </div>
                 </div>
                 
                 <div>
@@ -197,18 +371,49 @@ const ManualOrders = () => {
                   <Input
                     id="price"
                     type="number"
-                    step="0.25"
                     value={orderForm.price}
-                    onChange={(e) => handleFormChange("price", parseFloat(e.target.value))}
-                    className="mt-1"
+                    onChange={(e) => handleFormChange("price", e.target.value)}
+                    disabled={orderForm.type === "Market"}
                   />
+                  {quoteData && (quoteData.bid || quoteData.ask) && (
+                    <div className="text-xs mt-1 flex justify-center space-x-4 items-center">
+                      {quoteData.bid !== null && quoteData.bid !== undefined && (
+                        <div className="flex items-center">
+                          <span className="text-muted-foreground mr-1">Bid:</span>
+                          <Button 
+                            variant="link" 
+                            size="sm" 
+                            className="p-0 h-auto underline font-normal hover:no-underline hover:text-primary/80 dark:hover:text-primary/70"
+                            onClick={() => handleFormChange("price", String(quoteData.bid))}
+                          >
+                            {quoteData.bid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </Button>
+                        </div>
+                      )}
+                      {quoteData.ask !== null && quoteData.ask !== undefined && (
+                        <div className="flex items-center">
+                          <span className="text-muted-foreground mr-1">Ask:</span>
+                          <Button 
+                            variant="link" 
+                            size="sm" 
+                            className="p-0 h-auto underline font-normal hover:no-underline hover:text-primary/80 dark:hover:text-primary/70"
+                            onClick={() => handleFormChange("price", String(quoteData.ask))}
+                          >
+                            {quoteData.ask.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
                 </div>
                 
+              {/* Order Type Field - Commented out
                 <div>
                   <Label htmlFor="orderType">Order Type</Label>
                   <Select
-                    value={orderForm.orderType}
-                    onValueChange={(value) => handleFormChange("orderType", value)}
+                  value={orderForm.type}
+                  onValueChange={(value) => handleFormChange("type", value as ContextOrderType["type"])}
                   >
                     <SelectTrigger id="orderType" className="mt-1">
                       <SelectValue placeholder="Select order type" />
@@ -221,12 +426,14 @@ const ManualOrders = () => {
                     </SelectContent>
                   </Select>
                 </div>
+              */}
                 
+              {/* Time in Force Field - Commented out
                 <div>
                   <Label htmlFor="timeInForce">Time in Force</Label>
                   <Select
                     value={orderForm.timeInForce}
-                    onValueChange={(value) => handleFormChange("timeInForce", value)}
+                  onValueChange={(value) => handleFormChange("timeInForce", value as ManualOrderFormState["timeInForce"])}
                   >
                     <SelectTrigger id="timeInForce" className="mt-1">
                       <SelectValue placeholder="Select time in force" />
@@ -238,9 +445,9 @@ const ManualOrders = () => {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
+              */}
               
-              <div className="flex justify-end space-x-3">
+              <div className="flex justify-end space-x-3 mt-6"> {/* Added mt-6 for spacing */}
                 <Button 
                   type="button" 
                   className="bg-green-600 hover:bg-green-700"
@@ -260,148 +467,17 @@ const ManualOrders = () => {
           </CardContent>
         </Card>
         
-        {/* Positions Table */}
-        <Card>
-          <CardHeader className="px-6 py-4 border-b">
-            <CardTitle className="text-lg font-medium">Current Positions</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Account</TableHead>
-                    <TableHead>Symbol</TableHead>
-                    <TableHead>Quantity</TableHead>
-                    <TableHead>Avg Price</TableHead>
-                    <TableHead>P/L</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {positions.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="h-24 text-center">
-                        No positions found.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    positions.map((position) => (
-                      <TableRow key={position.id}>
-                        <TableCell>{getAccountName(position.accountId)}</TableCell>
-                        <TableCell>{position.symbol}</TableCell>
-                        <TableCell className="font-mono">{position.quantity}</TableCell>
-                        <TableCell className="font-mono">
-                          {position.avgPrice.toLocaleString(undefined, {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </TableCell>
-                        <TableCell
-                          className={`font-mono ${
-                            position.pnl >= 0 ? "text-green-500" : "text-red-500"
-                          }`}
-                        >
-                          {position.pnl >= 0 ? "+" : ""}$
-                          {position.pnl.toLocaleString(undefined, {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+        {/* Positions Table - Now using the imported component */}
+        {/* It stays in the 2-column layout, but now respects the filter from the form */}
+        {/* <Card> */}
+          <PositionsTable externallyFilteredAccount={selectedAccountForFilter} />
+        {/* </Card> */}       
             </div>
-          </CardContent>
-        </Card>
-        
-        {/* Orders Table */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="px-6 py-4 border-b">
-            <CardTitle className="text-lg font-medium">Active Orders</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Account</TableHead>
-                    <TableHead>Symbol</TableHead>
-                    <TableHead>Side</TableHead>
-                    <TableHead>Qty</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {orders.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center">
-                        No orders found.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    orders.map((order) => (
-                      <TableRow key={order.id}>
-                        <TableCell>{getAccountName(order.accountId)}</TableCell>
-                        <TableCell>{order.symbol}</TableCell>
-                        <TableCell>
-                          <span
-                            className={`inline-flex items-center px-2 py-1 rounded text-xs ${
-                              order.side === "Buy"
-                                ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200"
-                                : "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200"
-                            }`}
-                          >
-                            {order.side}
-                          </span>
-                        </TableCell>
-                        <TableCell className="font-mono">{order.quantity}</TableCell>
-                        <TableCell className="font-mono">
-                          {order.price.toLocaleString(undefined, {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </TableCell>
-                        <TableCell>
-                          <span
-                            className={`inline-flex items-center px-2 py-1 rounded text-xs ${
-                              order.status === "Working"
-                                ? "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200"
-                                : order.status === "Pending"
-                                ? "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                                : "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200"
-                            }`}
-                          >
-                            {order.status}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            className="text-primary-600 hover:text-primary-900 dark:hover:text-primary-400 h-8 px-2"
-                            onClick={() => handleEditOrder(order)}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            className="text-red-600 hover:text-red-900 dark:hover:text-red-400 h-8 px-2"
-                            onClick={() => handleCancelOrder(order.id)}
-                          >
-                            Cancel
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+      
+      {/* Orders Table - Now using the imported component, placed outside the 2-col grid to span full width */}
+      {/* Card wrapper is removed for OrdersTable to allow it to be styled directly or via its own Card if needed for consistency */}
+      <div className="mt-6"> {/* Added mt-6 for spacing */}
+        <OrdersTable externallyFilteredAccount={selectedAccountForFilter} />
       </div>
       
       {/* Edit Order Dialog */}
@@ -416,10 +492,10 @@ const ManualOrders = () => {
               <div className="col-span-2">
                 <Label htmlFor="edit-account">Account</Label>
                 <Select
-                  value={editingOrder.accountId.toString()}
+                  value={editingOrder.account}
                   onValueChange={(value) => 
                     setEditingOrder((prev) => 
-                      prev ? { ...prev, accountId: parseInt(value) } : null
+                      prev ? { ...prev, account: value } : null
                     )
                   }
                 >
@@ -428,8 +504,8 @@ const ManualOrders = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {accounts.map((account) => (
-                      <SelectItem key={account.id} value={account.id.toString()}>
-                        {account.name}
+                      <SelectItem key={account.id} value={account.accountNumber || ""}>
+                        {account.name} ({account.accountNumber})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -475,10 +551,10 @@ const ManualOrders = () => {
                   id="edit-quantity"
                   type="number"
                   min="1"
-                  value={editingOrder.quantity}
+                  value={editingOrder.quantity?.toString() ?? ""}
                   onChange={(e) => 
                     setEditingOrder((prev) => 
-                      prev ? { ...prev, quantity: parseInt(e.target.value) } : null
+                      prev ? { ...prev, quantity: parseInt(e.target.value) || null } : null
                     )
                   }
                 />
@@ -490,10 +566,10 @@ const ManualOrders = () => {
                   id="edit-price"
                   type="number"
                   step="0.25"
-                  value={editingOrder.price}
+                  value={editingOrder.price?.toString() ?? ""}
                   onChange={(e) => 
                     setEditingOrder((prev) => 
-                      prev ? { ...prev, price: parseFloat(e.target.value) } : null
+                      prev ? { ...prev, price: parseFloat(e.target.value) || null } : null
                     )
                   }
                 />

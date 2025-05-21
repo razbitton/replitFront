@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { useTradingContext } from "@/contexts/TradingContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useMemo } from "react";
 
 const LogsTable = () => {
   const { 
@@ -28,7 +29,13 @@ const LogsTable = () => {
   // Filter logs based on selected log level
   const filteredLogs = selectedLogLevel === "All Levels" 
     ? logs 
-    : logs.filter(log => log.level === selectedLogLevel);
+    : logs.filter(log => {
+        // Adjust filtering to account for "Information" logs when "Info" is selected
+        if (selectedLogLevel === "Info") {
+          return log.type === "Info" || log.type === "Information";
+        }
+        return log.type === selectedLogLevel;
+      });
   
   // Format timestamp to display only time
   const formatTimestamp = (timestamp: string) => {
@@ -44,9 +51,10 @@ const LogsTable = () => {
   };
 
   // Style badge based on log level
-  const getLogLevelBadgeStyle = (level: string) => {
-    switch (level) {
+  const getLogLevelBadgeStyle = (logType: string) => {
+    switch (logType) {
       case "Info":
+      case "Information":
         return "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200";
       case "Warning":
         return "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200";
@@ -58,6 +66,19 @@ const LogsTable = () => {
         return "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200";
     }
   };
+
+  const formatDisplayLogLevel = (logType: string) => {
+    if (logType === "Information") {
+      return "Info";
+    }
+    return logType;
+  };
+
+  // Dynamically generate log level options for the dropdown
+  const uniqueLogLevels = useMemo(() => {
+    const levels = new Set(logs.map(log => formatDisplayLogLevel(log.type)));
+    return Array.from(levels).sort(); // Sort for consistent order
+  }, [logs]);
 
   return (
     <Card>
@@ -74,16 +95,15 @@ const LogsTable = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="All Levels">All Levels</SelectItem>
-              <SelectItem value="Error">Error</SelectItem>
-              <SelectItem value="Warning">Warning</SelectItem>
-              <SelectItem value="Info">Info</SelectItem>
-              <SelectItem value="Debug">Debug</SelectItem>
+              {uniqueLogLevels.map(level => (
+                <SelectItem key={level} value={level}>{level}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="overflow-x-auto max-h-64">
+        <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -118,10 +138,10 @@ const LogsTable = () => {
                     <TableCell className="whitespace-nowrap">
                       <span
                         className={`inline-flex items-center px-2 py-1 rounded text-xs ${getLogLevelBadgeStyle(
-                          log.level
+                          log.type
                         )}`}
                       >
-                        {log.level}
+                        {formatDisplayLogLevel(log.type)}
                       </span>
                     </TableCell>
                     <TableCell>{log.message}</TableCell>

@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Utility functions for chart generation and management
 
 import { BandData, QuoteData } from "@/contexts/TradingContext";
 
 // Common chart configurations
-export const commonChartOptions = {
+export const commonChartOptions: any = {
   responsive: true,
   maintainAspectRatio: false,
   interaction: {
@@ -18,7 +19,7 @@ export const commonChartOptions = {
         padding: 20,
         font: {
           family: 'system-ui, sans-serif',
-          weight: '500',
+          weight: 500,
           size: 13,
         },
         color: '#4B5563',
@@ -38,7 +39,7 @@ export const commonChartOptions = {
       },
       titleFont: {
         family: 'system-ui, sans-serif',
-        weight: 'bold',
+        weight: 'bold' as const,
       },
       callbacks: {
         label: function(context: any) {
@@ -47,7 +48,7 @@ export const commonChartOptions = {
             label += ': ';
           }
           if (context.parsed.y !== null) {
-            label += context.parsed.y.toFixed(2);
+            label += context.parsed.y.toFixed(4);
           }
           return label;
         }
@@ -84,9 +85,13 @@ export const commonChartOptions = {
         },
         color: '#6B7280',
         padding: 10,
+        stepSize: 0.05,
         callback: function(value: any) {
-          if (typeof value === 'number' && value >= 1000) {
-            return (value / 1000) + 'k';
+          if (typeof value === 'number') {
+            if (value >= 1000) {
+              return (value / 1000) + 'k';
+            }
+            return value.toFixed(2);
           }
           return value;
         }
@@ -481,6 +486,178 @@ export const preparePriceActivityHeatmap = (quoteHistory: QuoteData[]) => {
         borderColor: backgroundColors.map(color => color.replace('0.7', '1').replace('rgba', 'rgb')), // Solid border
         borderWidth: 1,
         hoverBackgroundColor: backgroundColors.map(color => color.replace('0.7', '0.9')), // Darker on hover
+      },
+    ],
+  };
+};
+
+// Prepare data for premium metrics chart using all BandData fields
+export const preparePremiumMetricsData = (bandDataHistory: BandData[]) => {
+  if (!bandDataHistory || bandDataHistory.length === 0) {
+    return {
+      labels: generateTimeLabels(14),
+      datasets: [
+        {
+          label: 'Premium',
+          data: Array(14).fill(null),
+          borderColor: 'rgba(79, 70, 229, 1)', // Vibrant Indigo
+          backgroundColor: 'rgba(79, 70, 229, 0.1)',
+          tension: 0.4,
+          fill: true,
+          pointBackgroundColor: 'rgba(79, 70, 229, 1)',
+          pointBorderColor: '#fff',
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: 'rgba(79, 70, 229, 1)',
+        },
+        {
+          label: 'Upper Band',
+          data: Array(14).fill(null),
+          borderColor: 'rgba(156, 163, 175, 0.7)', // Tailwind Gray-400 for a softer dashed line
+          borderDash: [6, 3], // Adjusted dash pattern
+          borderWidth: 2, // Slightly thicker dash
+          tension: 0.4,
+          fill: false,
+          pointRadius: 0, // No points for band lines
+        },
+        {
+          label: 'Lower Band',
+          data: Array(14).fill(null),
+          borderColor: 'rgba(156, 163, 175, 0.7)', // Tailwind Gray-400
+          borderDash: [6, 3],
+          borderWidth: 2,
+          tension: 0.4,
+          fill: false,
+          pointRadius: 0,
+        },
+      ],
+    };
+  }
+  
+  const labels = bandDataHistory.map(data => formatTimestamp(data.timestamp));
+  const premiumData = bandDataHistory.map(data => data.premium);
+  const upperBandData = bandDataHistory.map(data => data.upperBand);
+  const lowerBandData = bandDataHistory.map(data => data.lowerBand);
+  
+  return {
+    labels,
+    datasets: [
+      {
+        label: 'Premium',
+        data: premiumData,
+        borderColor: 'rgba(79, 70, 229, 1)', // Vibrant Indigo
+        backgroundColor: 'rgba(79, 70, 229, 0.1)', // Light Indigo fill
+        tension: 0.4, // Consistent smoothness
+        fill: true,
+        pointBackgroundColor: 'rgba(79, 70, 229, 1)',
+        pointBorderColor: '#fff', // White border for points
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: 'rgba(79, 70, 229, 1)',
+      },
+      {
+        label: 'Upper Band',
+        data: upperBandData,
+        borderColor: 'rgba(156, 163, 175, 0.7)', // Tailwind Gray-400
+        borderDash: [6, 3], // Refined dash pattern
+        borderWidth: 2,
+        tension: 0.4, // Smooth dashed line
+        fill: false,
+        pointRadius: 0, // No points for band lines
+      },
+      {
+        label: 'Lower Band',
+        data: lowerBandData,
+        borderColor: 'rgba(156, 163, 175, 0.7)', // Tailwind Gray-400
+        borderDash: [6, 3],
+        borderWidth: 2,
+        tension: 0.4,
+        fill: false,
+        pointRadius: 0,
+      },
+    ],
+  };
+};
+
+// Prepare data for bollinger chart using BandData
+export const prepareBollingerMetricsData = (bandDataHistory: BandData[]) => {
+  if (!bandDataHistory || bandDataHistory.length === 0) {
+    return {
+      labels: generateTimeLabels(14),
+      datasets: [
+        {
+          label: 'Price (M1 Close)',
+          data: Array(14).fill(null),
+          borderColor: 'rgba(5, 150, 105, 1)', // Vibrant Emerald (consistent with Asset Chart)
+          backgroundColor: 'rgba(5, 150, 105, 0.1)',
+          tension: 0.4,
+          fill: false, // Usually Bollinger price line isn't filled
+          pointBackgroundColor: 'rgba(5, 150, 105, 1)',
+          pointBorderColor: '#fff',
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: 'rgba(5, 150, 105, 1)',
+        },
+        {
+          label: 'Upper Bollinger Band',
+          data: Array(14).fill(null),
+          borderColor: 'rgba(217, 70, 239, 0.7)', // Vibrant Fuchsia for bands
+          borderDash: [6, 3],
+          borderWidth: 2,
+          tension: 0.4,
+          fill: false,
+          pointRadius: 0,
+        },
+        {
+          label: 'Lower Bollinger Band',
+          data: Array(14).fill(null),
+          borderColor: 'rgba(217, 70, 239, 0.7)', // Vibrant Fuchsia for bands
+          borderDash: [6, 3],
+          borderWidth: 2,
+          tension: 0.4,
+          fill: false,
+          pointRadius: 0,
+        },
+      ],
+    };
+  }
+  
+  const labels = bandDataHistory.map(data => formatTimestamp(data.timestamp));
+  const priceData = bandDataHistory.map(data => data.m1Close);
+  const upperBollingerData = bandDataHistory.map(data => data.bollingerUpperBand);
+  const lowerBollingerData = bandDataHistory.map(data => data.bollingerLowerBand);
+  
+  return {
+    labels,
+    datasets: [
+      {
+        label: 'Price (M1 Close)',
+        data: priceData,
+        borderColor: 'rgba(5, 150, 105, 1)', // Vibrant Emerald
+        backgroundColor: 'rgba(5, 150, 105, 0.1)',
+        tension: 0.4,
+        fill: false, // Price line in Bollinger usually not filled to see bands clearly
+        pointBackgroundColor: 'rgba(5, 150, 105, 1)',
+        pointBorderColor: '#fff',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: 'rgba(5, 150, 105, 1)',
+      },
+      {
+        label: 'Upper Bollinger Band',
+        data: upperBollingerData,
+        borderColor: 'rgba(217, 70, 239, 0.7)', // Vibrant Fuchsia for bands
+        borderDash: [6, 3],
+        borderWidth: 2,
+        tension: 0.4,
+        fill: false,
+        pointRadius: 0,
+      },
+      {
+        label: 'Lower Bollinger Band',
+        data: lowerBollingerData,
+        borderColor: 'rgba(217, 70, 239, 0.7)', // Vibrant Fuchsia for bands
+        borderDash: [6, 3],
+        borderWidth: 2,
+        tension: 0.4,
+        fill: false,
+        pointRadius: 0,
       },
     ],
   };

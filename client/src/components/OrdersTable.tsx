@@ -16,27 +16,90 @@ import {
 } from "@/components/ui/select";
 import { useTradingContext } from "@/contexts/TradingContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useMemo } from "react";
 
-const OrdersTable = () => {
+interface OrdersTableProps {
+  externallyFilteredAccount?: string | null; // accountNumber or null for all
+}
+
+const OrdersTable: React.FC<OrdersTableProps> = ({ externallyFilteredAccount }) => {
   const { 
     orders, 
     accounts, 
-    selectedAccount,
-    setSelectedAccount,
+    selectedAccount: contextSelectedAccount, // Renamed
+    setSelectedAccount: contextSetSelectedAccount, // Renamed
     isLoading
   } = useTradingContext();
 
-  const filteredOrders = selectedAccount === "All Accounts" 
-    ? orders 
-    : orders.filter((order) => {
-        const account = accounts.find(a => a.id === order.accountId);
-        return account?.name === selectedAccount;
-      });
+  // Determine the active filter: external prop takes precedence
+  const activeFilterAccount = externallyFilteredAccount !== undefined 
+    ? externallyFilteredAccount 
+    : contextSelectedAccount;
 
-  const getAccountName = (accountId: number) => {
-    const account = accounts.find(a => a.id === accountId);
-    return account?.name || `Account ${accountId}`;
+  // Similar to PositionsTable, derive the value for the dropdown
+  const selectedAccountForDropdown = useMemo(() => {
+    if (externallyFilteredAccount === null) return "All Accounts";
+    if (externallyFilteredAccount) {
+      const acc = accounts.find(a => a.accountNumber === externallyFilteredAccount);
+      return acc?.name || "All Accounts";
+    }
+    return contextSelectedAccount;
+  }, [externallyFilteredAccount, accounts, contextSelectedAccount]);
+
+  const filteredOrders = useMemo(() => {
+    if (activeFilterAccount === "All Accounts" || activeFilterAccount === null) {
+      return orders;
+    }
+    // If activeFilterAccount is an account name (from context) or accountNumber (from prop)
+    return orders.filter((order) => {
+      if (externallyFilteredAccount !== undefined) { // External filter is by accountNumber
+        return order.account === activeFilterAccount;
+      } 
+      // Internal filter is by accountName. We need to find the account number for the given name.
+      const accountForFilter = accounts.find(acc => acc.name === activeFilterAccount);
+      return order.account === accountForFilter?.accountNumber;
+    });
+  }, [orders, accounts, activeFilterAccount, externallyFilteredAccount]);
+
+  const getAccountName = (orderAccountIdentifier: string) => {
+    const account = accounts.find(acc => acc.accountNumber === orderAccountIdentifier);
+    return account?.name || 'N/A';
   };
+
+  const accountsWithOrdersCount = useMemo(() => {
+    // Count based on the actually filtered orders
+    const uniqueAccountIdentifiersInFiltered = new Set(filteredOrders.map(order => order.account));
+    return uniqueAccountIdentifiersInFiltered.size;
+  }, [filteredOrders]);
+
+  // Total accounts to display in (X/Y) depends on whether an external filter is active
+  const totalAccountsForDisplay = useMemo(() => {
+    if (externallyFilteredAccount && externallyFilteredAccount !== "All Accounts" && externallyFilteredAccount !== null) {
+      // If filtered to a single account externally, Y should be 1
+      return 1;
+    }
+    return accounts.length; // Otherwise, it's all accounts in the system
+  }, [externallyFilteredAccount, accounts.length]);
+
+  const accountsWithoutOrdersNames = useMemo(() => {
+    const accountIdentifiersWithOrdersInFiltered = new Set(filteredOrders.map(order => order.account));
+    
+    let relevantAccounts = accounts;
+    if (externallyFilteredAccount && externallyFilteredAccount !== null && externallyFilteredAccount !== "All Accounts") {
+      relevantAccounts = accounts.filter(acc => acc.accountNumber === externallyFilteredAccount);
+    }
+    
+    return relevantAccounts
+      .filter(acc => !accountIdentifiersWithOrdersInFiltered.has(acc.accountNumber || ""))
+      .map(acc => acc.name)
+      .join(", ");
+  }, [filteredOrders, accounts, externallyFilteredAccount]);
 
   const formatTime = (timestamp: string) => {
     return new Date(timestamp).toLocaleTimeString([], { 
@@ -49,29 +112,49 @@ const OrdersTable = () => {
   return (
     <Card>
       <CardHeader className="px-6 py-4 border-b flex-row flex items-center justify-between space-y-0">
-        <CardTitle className="text-lg font-medium">Orders</CardTitle>
-        <div className="flex space-x-2">
-          <Select
-            value={selectedAccount}
-            onValueChange={setSelectedAccount}
-            disabled={isLoading}
-          >
-            <SelectTrigger className="w-[180px] text-sm">
-              <SelectValue placeholder="All Accounts" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All Accounts">All Accounts</SelectItem>
-              {accounts.map((account) => (
-                <SelectItem key={account.id} value={account.name}>
-                  {account.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex items-center">
+          <CardTitle className="text-lg font-medium">Orders</CardTitle>
+          {(totalAccountsForDisplay > 0 || externallyFilteredAccount) && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="ml-2 text-sm font-normal text-gray-500 cursor-default">
+                    ({accountsWithOrdersCount}/{totalAccountsForDisplay})
+                  </span>
+                </TooltipTrigger>
+                {accountsWithoutOrdersNames && totalAccountsForDisplay > 1 && (
+                  <TooltipContent>
+                    <p>Accounts without orders: {accountsWithoutOrdersNames}</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
+        {externallyFilteredAccount === undefined && (
+          <div className="flex space-x-2">
+            <Select
+              value={selectedAccountForDropdown}
+              onValueChange={contextSetSelectedAccount}
+              disabled={isLoading}
+            >
+              <SelectTrigger className="w-[180px] text-sm">
+                <SelectValue placeholder="All Accounts" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All Accounts">All Accounts</SelectItem>
+                {accounts.map((account) => (
+                  <SelectItem key={account.id} value={account.name}>
+                    {account.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="p-0">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -102,17 +185,23 @@ const OrdersTable = () => {
               ) : (
                 filteredOrders.map((order) => (
                   <TableRow key={order.id}>
-                    <TableCell>{getAccountName(order.accountId)}</TableCell>
+                    <TableCell>{getAccountName(order.account)}</TableCell>
                     <TableCell>{order.symbol}</TableCell>
-                    <TableCell className="font-mono">{order.quantity}</TableCell>
-                    <TableCell className="font-mono">{order.quantity}</TableCell>
                     <TableCell className="font-mono">
-                      ${order.price.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
+                      {typeof order.quantity === 'number' ? order.quantity.toLocaleString() : 'N/A'}
                     </TableCell>
-                    <TableCell className="font-mono">{formatTime(order.createdAt)}</TableCell>
+                    <TableCell className="font-mono">
+                      {typeof order.quantityLeft === 'number' ? order.quantityLeft.toLocaleString() : 'N/A'}
+                    </TableCell>
+                    <TableCell className="font-mono">
+                      {typeof order.price === 'number'
+                        ? `$${order.price.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}`
+                        : 'N/A'}
+                    </TableCell>
+                    <TableCell className="font-mono">{formatTime(order.timestamp)}</TableCell>
                   </TableRow>
                 ))
               )}

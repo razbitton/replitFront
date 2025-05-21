@@ -120,6 +120,9 @@ export const bandData = pgTable("band_data", {
   premium: numeric("premium", { precision: 10, scale: 2 }).notNull(),
   upperBand: numeric("upper_band", { precision: 10, scale: 2 }).notNull(),
   lowerBand: numeric("lower_band", { precision: 10, scale: 2 }).notNull(),
+  m1Close: numeric("m1_close", { precision: 10, scale: 2 }),
+  bollingerUpperBand: numeric("bollinger_upper_band", { precision: 10, scale: 2 }),
+  bollingerLowerBand: numeric("bollinger_lower_band", { precision: 10, scale: 2 }),
   timestamp: timestamp("timestamp").defaultNow(),
 });
 

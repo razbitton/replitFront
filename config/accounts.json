@@ -1,18 +1,1 @@
-[
-  {
-    "name": "Account 1",
-    "broker": "Interactive Brokers",
-    "apiKey": "test-key-1",
-    "apiSecret": "test-secret-1",
-    "active": true,
-    "id": 1
-  },
-  {
-    "name": "Account 2",
-    "broker": "TD Ameritrade",
-    "apiKey": "test-key-2",
-    "apiSecret": "test-secret-2",
-    "active": true,
-    "id": 2
-  }
-]
+[]

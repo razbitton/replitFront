@@ -173,13 +173,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // API Routes
   
+  // New route to get inputs from the specified JSON file
+  app.get("/api/inputs-from-file", async (req: Request, res: Response) => {
+    const inputsJsonPath = "C:\\Users\\hp\\OneDrive\\Documents\\AlfaIntegrationFolder\\inputs.json";
+    try {
+      if (fs.existsSync(inputsJsonPath)) {
+        const fileData = await fs.promises.readFile(inputsJsonPath, 'utf8');
+        const rawInputs = JSON.parse(fileData);
+
+        // Transform Global Settings keys
+        const globalSettings = {
+          futureSymbol: rawInputs.FutureSymbol,
+          marginRequirement: rawInputs.MarginRequirement,
+          expirationDate: rawInputs.ExpirationDate, // Keep as string, frontend handles Date object
+          expirationTime: rawInputs.ExpirationTime,
+          signalCalculationStartTime: rawInputs.SignalCalculationStartTime,
+          tradingStartTime: rawInputs.TradingStartTime,
+          globalEndTime: rawInputs.GlobalEndTime,
+          // Add any other global settings fields from your context/GlobalSettings type if they exist in JSON
+          // For example, if your GlobalSettings type has these and they are NOT in the JSON,
+          // you might provide defaults or they will be undefined.
+          initialMargin: rawInputs.InitialMargin || 5000, // Example: provide default if not in JSON
+          maintenanceMargin: rawInputs.MaintenanceMargin || 4000,
+          contractSize: rawInputs.ContractSize || 50,
+          tickValue: rawInputs.TickValue || 12.5,
+          tradingHoursStart: rawInputs.TradingHoursStart || "09:30",
+          tradingHoursEnd: rawInputs.TradingHoursEnd || "16:00",
+          maxPositionSize: rawInputs.MaxPositionSize || 10,
+          maxDailyLoss: rawInputs.MaxDailyLoss || 1000,
+          targetProfit: rawInputs.TargetProfit || 2000,
+        };
+
+        // Transform Daily Parameters keys
+        const dailyParameters = rawInputs.DailyParameters.map((param: any) => ({
+          day: param.DayOfWeek,
+          premiumThresholdIn: param.PremiumThresholdIn,
+          premiumThresholdOut: param.PremiumThresholdOut,
+          avgLength: param.AVGLength,
+          upperBandDeviation: param.UpperBandDeviation,
+          lowerBandDeviation: param.LowerBandDeviation,
+          // timeAdjustments: param.TimeAdjustments || { vixOpen: 0, marketOpen: 0, marketClose: 0 } // Example if you add this later
+        }));
+
+        res.json({ globalSettings, dailyParameters });
+      } else {
+        console.warn(`Inputs JSON file not found at: ${inputsJsonPath}`);
+        res.status(404).json({ message: "Inputs JSON data file not found." });
+      }
+    } catch (error) {
+      console.error(`Error processing inputs JSON file at ${inputsJsonPath}:`, error);
+      if (error instanceof SyntaxError) {
+        res.status(500).json({ message: "Failed to parse inputs JSON data.", error: error.message });
+      } else {
+        res.status(500).json({ message: "Failed to retrieve inputs from file due to an internal error." });
+      }
+    }
+  });
+  
   // Accounts
   app.get("/api/accounts", async (req: Request, res: Response) => {
+    const hardcodedAccountsPath = "C:\\Users\\hp\\OneDrive\\Documents\\AlfaIntegrationFolder\\accounts.json"; // Using double backslashes for Windows path in JS string
     try {
-      const accounts = await storage.getAccounts();
-      res.json(accounts);
+      if (fs.existsSync(hardcodedAccountsPath)) {
+        const fileData = await fs.promises.readFile(hardcodedAccountsPath, 'utf8');
+        const rawAccounts = JSON.parse(fileData);
+        
+        // Transform accounts to match frontend expectations
+        const transformedAccounts = rawAccounts.map((acc: any, index: number) => ({
+          id: acc.id || index + 1, // Use existing id or generate one
+          name: acc.Name || acc.name, 
+          broker: acc.Broker || acc.broker,
+          apiKey: acc.ApiKey || acc.apiKey,
+          apiSecret: acc.ApiSecret || acc.apiSecret,
+          accountNumber: acc.AccountNumber || acc.accountNumber,
+          refreshToken: acc.RefreshToken || acc.refreshToken,
+          percentToTrade: parseFloat(acc.PercentToTrade || acc.percentToTrade || "0"),
+          active: acc.active !== undefined ? acc.active : true // Default to true if not present
+        }));
+        
+        res.json(transformedAccounts);
+      } else {
+        console.warn(`Accounts file not found at: ${hardcodedAccountsPath}`);
+        res.status(404).json({ message: "Accounts data file not found." });
+      }
     } catch (error) {
-      res.status(500).json({ message: "Failed to retrieve accounts" });
+      console.error(`Error processing accounts file at ${hardcodedAccountsPath}:`, error);
+      if (error instanceof SyntaxError) {
+        res.status(500).json({ message: "Failed to parse accounts data.", error: error.message });
+      } else {
+        res.status(500).json({ message: "Failed to retrieve accounts due to an internal error." });
+      }
     }
   });
   
@@ -454,7 +537,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/band-data", async (req: Request, res: Response) => {
     try {
       const bandData = await storage.getCurrentBandData();
-      res.json(bandData);
+      if (bandData) {
+        res.json({
+          ...bandData,
+          premium: parseFloat(bandData.premium as string),
+          upperBand: parseFloat(bandData.upperBand as string),
+          lowerBand: parseFloat(bandData.lowerBand as string),
+          m1Close: parseFloat(bandData.m1Close as string || "0"),
+          bollingerUpperBand: parseFloat(bandData.bollingerUpperBand as string || "0"),
+          bollingerLowerBand: parseFloat(bandData.bollingerLowerBand as string || "0"),
+        });
+      } else {
+        res.json(null);
+      }
     } catch (error) {
       res.status(500).json({ message: "Failed to retrieve band data" });
     }
@@ -464,7 +559,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
       const history = await storage.getBandDataHistory(limit);
-      res.json(history);
+      // Assuming history also contains stringified numbers, parse them
+      const parsedHistory = history.map((item: any) => ({
+        ...item,
+        premium: parseFloat(item.premium as string),
+        upperBand: parseFloat(item.upperBand as string),
+        lowerBand: parseFloat(item.lowerBand as string),
+        m1Close: parseFloat(item.m1Close as string || "0"),
+        bollingerUpperBand: parseFloat(item.bollingerUpperBand as string || "0"),
+        bollingerLowerBand: parseFloat(item.bollingerLowerBand as string || "0"),
+      }));
+      res.json(parsedHistory);
     } catch (error) {
       res.status(500).json({ message: "Failed to retrieve band data history" });
     }
@@ -480,7 +585,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Quote not found" });
       }
       
-      res.json(quote);
+      res.json({
+        ...quote,
+        price: parseFloat(quote.price as string),
+        change: parseFloat(quote.change as string),
+      });
     } catch (error) {
       res.status(500).json({ message: "Failed to retrieve quote" });
     }
@@ -491,7 +600,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const symbol = req.params.symbol;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
       const history = await storage.getQuoteHistory(symbol, limit);
-      res.json(history);
+      // Assuming history also contains stringified numbers, parse them
+      const parsedHistory = history.map((item: any) => ({
+        ...item,
+        price: parseFloat(item.price as string),
+        change: parseFloat(item.change as string),
+      }));
+      res.json(parsedHistory);
     } catch (error) {
       res.status(500).json({ message: "Failed to retrieve quote history" });
     }
@@ -511,9 +626,12 @@ function setupSimulatedUpdates(broadcast: (data: any) => void) {
         const newPremium = Number((parseFloat(currentBand.premium.toString()) + variation).toFixed(2));
         
         const newBandData = await storage.updateBandData({
-          premium: newPremium,
+          premium: newPremium.toString(),
           upperBand: currentBand.upperBand,
-          lowerBand: currentBand.lowerBand
+          lowerBand: currentBand.lowerBand,
+          m1Close: (4200 + Math.random() * 50).toString(), // Mock M1 close price around 4200
+          bollingerUpperBand: (4250 + Math.random() * 20).toString(), // Mock upper Bollinger band
+          bollingerLowerBand: (4150 + Math.random() * 20).toString(), // Mock lower Bollinger band
         });
         
         broadcast({ type: "bandDataUpdated", data: newBandData });
@@ -534,8 +652,8 @@ function setupSimulatedUpdates(broadcast: (data: any) => void) {
         
         const newQuote = await storage.updateQuote({
           symbol: "ES2023",
-          price: newPrice,
-          change: changePercent
+          price: newPrice.toString(),
+          change: changePercent.toString()
         });
         
         broadcast({ type: "quoteUpdated", data: newQuote });
